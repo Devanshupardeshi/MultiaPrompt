@@ -1,0 +1,273 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #121212;
+  --foreground: #ffffff;
+  --card: #1a1a1a;
+  --card-foreground: #ffffff;
+  --popover: #1a1a1a;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #121212;
+  --secondary: #1e1e1e;
+  --secondary-foreground: #ffffff;
+  --muted: #2a2a2a;
+  --muted-foreground: #999999;
+  --accent: #2a2a2a;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4444;
+  --destructive-foreground: #ffffff;
+  --border: #333333;
+  --input: #1e1e1e;
+  --ring: #ffffff;
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --font-sans: 'Wix Madefor Display', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --font-display: 'freight-display-pro', Georgia, serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    background: #121212;
+    color: #ffffff;
+    font-family: 'Wix Madefor Display', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'freight-display-pro', Georgia, serif;
+  }
+
+  .font-body {
+    font-family: 'Wix Madefor Display', system-ui, sans-serif;
+  }
+
+  /* Multia-style pill button */
+  .btn-multia {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+    border-radius: 75px;
+    color: #ffffff;
+    font-family: 'Wix Madefor Display', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    padding: 12px 32px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .btn-multia:hover {
+    background: #ffffff;
+    color: #121212;
+  }
+
+  .btn-multia-sm {
+    font-size: 13px;
+    padding: 8px 20px;
+    border-width: 1.5px;
+  }
+
+  .btn-multia-filled {
+    background: #ffffff;
+    color: #121212;
+    border-color: #ffffff;
+  }
+
+  .btn-multia-filled:hover {
+    background: transparent;
+    color: #ffffff;
+  }
+
+  /* Noise overlay — Multia style */
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Fade-in animation */
+  .fade-in-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .fade-in-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger delays */
+  .delay-1 { transition-delay: 0.1s; }
+  .delay-2 { transition-delay: 0.2s; }
+  .delay-3 { transition-delay: 0.3s; }
+  .delay-4 { transition-delay: 0.4s; }
+  .delay-5 { transition-delay: 0.5s; }
+
+  /* JSON syntax highlighting */
+  .json-key { color: #e8e8e8; }
+  .json-string { color: #b0b0b0; }
+  .json-number { color: #d4d4d4; }
+  .json-boolean { color: #c0c0c0; }
+  .json-null { color: #888888; }
+  .json-bracket { color: #666666; }
+
+  /* Scrollbar — minimal */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* Skeleton pulse */
+  .skeleton-pulse {
+    background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Textarea focus ring — Multia style */
+  .input-multia {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Wix Madefor Display', system-ui, sans-serif;
+    transition: border-color 0.3s ease;
+  }
+
+  .input-multia:focus {
+    outline: none;
+    border-color: #666;
+  }
+
+  .input-multia::placeholder {
+    color: #555;
+  }
+
+  /* Style pill */
+  .style-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    border: 1px solid #333;
+    border-radius: 50px;
+    color: #999;
+    font-size: 13px;
+    font-family: 'Wix Madefor Display', system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .style-pill:hover {
+    border-color: #666;
+    color: #ccc;
+  }
+
+  .style-pill.active {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Code block container */
+  .code-block {
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .code-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #222;
+    background: #141414;
+  }
+
+  .code-block-body {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #d4d4d4;
+  }
+}
