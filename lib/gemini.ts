@@ -190,10 +190,13 @@ export async function generatePrompt(
   const userMessage = `Style preset: ${style}
 ${useCharacter && characterName ? `Character name for consistency: ${characterName}` : "No character consistency needed."}
 
-User's description:
+${referenceImage ? `[IMPORTANT: A reference image is attached.
+Use this image ONLY for stylistic inspiration (lighting, mood, color grading, texture, and camera style).
+DO NOT copy the specific subjects, characters, or exact scene from the image.
+Apply the image's aesthetic to the user's description below.]\n` : ""}
+User's description (THIS IS THE PRIMARY SUBJECT/ACTION):
 ${description}
 
-${referenceImage ? "A reference image has been provided. Please analyze it carefully and incorporate its visual elements, lighting, composition, and subject details into the prompt output." : ""}
 Generate the complete BananaVault JSON prompt now.`;
 
   const parts: any[] = [{ text: userMessage }];
