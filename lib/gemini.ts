@@ -114,6 +114,68 @@ When the user describes what they want, you MUST output ONLY a valid JSON object
 8. Include realistic skin textures, material descriptions, and environmental details.
 9. DO NOT wrap in markdown code blocks. Output raw JSON only.`;
 
+const ENHANCE_SYSTEM_PROMPT = `You are a professional prompt engineer specializing in AI image generation.
+Your task is to take a simple, short user idea and expand it into a rich, detailed, and highly descriptive paragraph.
+Add cinematography details, lighting setup, textures, camera angles, and atmosphere.
+Do not wrap your output in quotes. Return a single plain text paragraph (2-4 sentences max).`;
+
+export async function enhanceDescription(description: string, retryCount = 0): Promise<string> {
+  const maxRetries = 5;
+  const apiKey = getNextKey();
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `Enhance this idea for an image prompt: ${description}` }],
+            },
+          ],
+          systemInstruction: {
+            parts: [{ text: ENHANCE_SYSTEM_PROMPT }],
+          },
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.9,
+            topK: 40,
+            maxOutputTokens: 1024,
+            responseMimeType: "text/plain",
+          },
+        }),
+      }
+    );
+
+    if (response.status === 429 && retryCount < maxRetries) {
+      console.log(`Rate limited on enhance, key index ${currentKeyIndex - 1}, rotating...`);
+      return enhanceDescription(description, retryCount + 1);
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      throw new Error("No content in Gemini enhance response");
+    }
+
+    return text.trim();
+  } catch (error) {
+    if (retryCount < maxRetries && error instanceof Error && error.message.includes("429")) {
+      return enhanceDescription(description, retryCount + 1);
+    }
+    throw error;
+  }
+}
+
 export async function generatePrompt(
   description: string,
   style: string,

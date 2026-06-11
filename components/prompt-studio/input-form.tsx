@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 const STYLE_PRESETS = [
   { id: "hyper-realism", label: "Hyper-Realism" },
@@ -30,6 +30,32 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [selectedStyle, setSelectedStyle] = useState("hyper-realism");
   const [useCharacter, setUseCharacter] = useState(false);
   const [characterName, setCharacterName] = useState("");
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+
+  const handleEnhance = async () => {
+    if (!description.trim() || isEnhancing) return;
+    setIsEnhancing(true);
+    setEnhanceError(null);
+    try {
+      const res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok)
+        throw new Error(data.error || "Failed to enhance description");
+      setDescription(data.enhanced);
+    } catch (err) {
+      console.error(err);
+      setEnhanceError(
+        err instanceof Error ? err.message : "Failed to enhance description.",
+      );
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const handleSubmit = () => {
     if (!description.trim()) return;
@@ -41,7 +67,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       handleSubmit();
     }
@@ -57,15 +83,57 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">
               Describe what you want to create
             </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="A portrait of a young woman in a sunlit café in Paris, golden hour light streaming through vintage windows, candid documentary style, natural imperfections, wearing a linen blazer..."
-              rows={5}
-              className="input-multia w-full px-5 py-4 text-[15px] leading-relaxed resize-none custom-scrollbar"
-              id="prompt-description"
-            />
+            <div className="relative">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isEnhancing}
+                placeholder="A portrait of a young woman in a sunlit café in Paris, golden hour light streaming through vintage windows, candid documentary style, natural imperfections, wearing a linen blazer..."
+                rows={5}
+                className="input-multia w-full px-5 py-4 pb-12 text-[15px] leading-relaxed resize-none custom-scrollbar disabled:opacity-50"
+                id="prompt-description"
+              />
+              <button
+                type="button"
+                onClick={handleEnhance}
+                disabled={isEnhancing || !description.trim() || isLoading}
+                className={`absolute bottom-3 right-3 text-[11px] font-body uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors ${
+                  isEnhancing || !description.trim() || isLoading
+                    ? "bg-white/5 text-white/30 cursor-not-allowed"
+                    : "bg-white/10 hover:bg-white/20 text-white/80"
+                }`}
+                title="Automatically expand your idea into a detailed prompt"
+              >
+                {isEnhancing ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin w-3 h-3"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        opacity="0.25"
+                      />
+                      <path
+                        d="M12 2a10 10 0 0 1 10 10"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Enhancing...
+                  </span>
+                ) : (
+                  "✨ Magic Enhance"
+                )}
+              </button>
+            </div>
             <div className="flex justify-between items-center mt-2">
               <span className="text-[11px] text-white/20 font-body">
                 ⌘+Enter to generate
@@ -74,6 +142,11 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                 {description.length} chars
               </span>
             </div>
+            {enhanceError && (
+              <p className="text-xs text-red-400 mt-2 bg-red-500/10 p-2 rounded border border-red-500/20">
+                {enhanceError}
+              </p>
+            )}
           </div>
 
           {/* Style presets */}
@@ -132,7 +205,8 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                   id="character-name"
                 />
                 <p className="text-[11px] text-white/20 font-body mt-2">
-                  The generated prompt will include identity anchoring for consistent character features across multiple generations.
+                  The generated prompt will include identity anchoring for
+                  consistent character features across multiple generations.
                 </p>
               </div>
             )}
