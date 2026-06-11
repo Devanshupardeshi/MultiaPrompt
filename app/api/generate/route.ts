@@ -4,7 +4,7 @@ import { generatePrompt } from "@/lib/gemini";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { description, style, characterName, useCharacter } = body;
+    const { description, style, characterName, useCharacter, referenceImage } = body;
 
     if (!description || typeof description !== "string" || !description.trim()) {
       return NextResponse.json(
@@ -17,7 +17,9 @@ export async function POST(request: NextRequest) {
       description,
       style || "hyper-realism",
       characterName || "",
-      useCharacter || false
+      useCharacter || false,
+      0, // retryCount
+      referenceImage
     );
 
     return NextResponse.json({ json: result });

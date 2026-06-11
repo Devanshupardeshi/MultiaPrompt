@@ -181,7 +181,8 @@ export async function generatePrompt(
   style: string,
   characterName: string,
   useCharacter: boolean,
-  retryCount = 0
+  retryCount = 0,
+  referenceImage?: string
 ): Promise<string> {
   const maxRetries = 5;
   const apiKey = getNextKey();
@@ -192,7 +193,22 @@ ${useCharacter && characterName ? `Character name for consistency: ${characterNa
 User's description:
 ${description}
 
+${referenceImage ? "A reference image has been provided. Please analyze it carefully and incorporate its visual elements, lighting, composition, and subject details into the prompt output." : ""}
 Generate the complete BananaVault JSON prompt now.`;
+
+  const parts: any[] = [{ text: userMessage }];
+
+  if (referenceImage) {
+    const matches = referenceImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      parts.push({
+        inlineData: {
+          mimeType: matches[1],
+          data: matches[2]
+        }
+      });
+    }
+  }
 
   try {
     const response = await fetch(
@@ -204,7 +220,7 @@ Generate the complete BananaVault JSON prompt now.`;
           contents: [
             {
               role: "user",
-              parts: [{ text: userMessage }],
+              parts: parts,
             },
           ],
           systemInstruction: {
@@ -224,7 +240,7 @@ Generate the complete BananaVault JSON prompt now.`;
     if (response.status === 429 && retryCount < maxRetries) {
       // Rate limited — try next key
       console.log(`Rate limited on key index ${currentKeyIndex - 1}, rotating...`);
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1);
+      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImage);
     }
 
     if (!response.ok) {
@@ -260,7 +276,7 @@ Generate the complete BananaVault JSON prompt now.`;
     return cleaned;
   } catch (error) {
     if (retryCount < maxRetries && error instanceof Error && error.message.includes("429")) {
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1);
+      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImage);
     }
     throw error;
   }

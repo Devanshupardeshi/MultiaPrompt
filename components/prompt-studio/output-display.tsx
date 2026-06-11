@@ -7,6 +7,7 @@ interface OutputDisplayProps {
   isLoading: boolean;
   error: string | null;
   onRegenerate: () => void;
+  hasReferenceImage?: boolean;
 }
 
 function syntaxHighlight(json: string): string {
@@ -35,6 +36,7 @@ export function OutputDisplay({
   isLoading,
   error,
   onRegenerate,
+  hasReferenceImage,
 }: OutputDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -144,6 +146,19 @@ export function OutputDisplay({
                   }}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reference Image Reminder */}
+        {hasReferenceImage && json && !isLoading && (
+          <div className="border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-4 mb-4 flex gap-3 items-start">
+            <span className="text-yellow-500/80 text-lg leading-none">💡</span>
+            <div>
+              <p className="text-sm text-yellow-500/80 font-body font-medium mb-1">Remember Your Reference Image!</p>
+              <p className="text-[13px] text-yellow-500/60 font-body">
+                Be sure to provide the same reference image to the final AI generation tool along with this prompt to get the best result.
+              </p>
             </div>
           </div>
         )}
