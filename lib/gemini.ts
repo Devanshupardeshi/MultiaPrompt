@@ -182,7 +182,7 @@ export async function generatePrompt(
   characterName: string,
   useCharacter: boolean,
   retryCount = 0,
-  referenceImage?: string
+  referenceImages?: string[]
 ): Promise<string> {
   const maxRetries = 5;
   const apiKey = getNextKey();
@@ -190,10 +190,11 @@ export async function generatePrompt(
   const userMessage = `Style preset: ${style}
 ${useCharacter && characterName ? `Character name for consistency: ${characterName}` : "No character consistency needed."}
 
-${referenceImage ? `[IMPORTANT: A reference image is attached.
-Use this image ONLY for stylistic inspiration (lighting, mood, color grading, texture, and camera style).
-DO NOT copy the specific subjects, characters, or exact scene from the image.
-Apply the image's aesthetic to the user's description below.]\n` : ""}
+${referenceImages && referenceImages.length > 0 ? `[IMPORTANT: Reference image(s) are attached.
+Analyze the attached reference image(s) and determine the primary focus of each:
+- If an image primarily features a prominent face/portrait, treat it as a FACE REFERENCE. You MUST describe the character to exactly match that face's likeness.
+- If an image primarily features a pose, landscape, or aesthetic scene, treat it as a STYLE/POSE REFERENCE. Extract its lighting, mood, color grading, pose, and camera style, but DO NOT copy the specific subjects.
+Apply these aesthetics and character details to the user's description below.]\n` : ""}
 User's description (THIS IS THE PRIMARY SUBJECT/ACTION):
 ${description}
 
@@ -201,16 +202,18 @@ Generate the complete BananaVault JSON prompt now.`;
 
   const parts: any[] = [{ text: userMessage }];
 
-  if (referenceImage) {
-    const matches = referenceImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (matches && matches.length === 3) {
-      parts.push({
-        inlineData: {
-          mimeType: matches[1],
-          data: matches[2]
-        }
-      });
-    }
+  if (referenceImages && referenceImages.length > 0) {
+    referenceImages.forEach((img) => {
+      const matches = img.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        parts.push({
+          inlineData: {
+            mimeType: matches[1],
+            data: matches[2]
+          }
+        });
+      }
+    });
   }
 
   try {
@@ -243,7 +246,7 @@ Generate the complete BananaVault JSON prompt now.`;
     if (response.status === 429 && retryCount < maxRetries) {
       // Rate limited — try next key
       console.log(`Rate limited on key index ${currentKeyIndex - 1}, rotating...`);
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImage);
+      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImages);
     }
 
     if (!response.ok) {
@@ -279,7 +282,7 @@ Generate the complete BananaVault JSON prompt now.`;
     return cleaned;
   } catch (error) {
     if (retryCount < maxRetries && error instanceof Error && error.message.includes("429")) {
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImage);
+      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImages);
     }
     throw error;
   }

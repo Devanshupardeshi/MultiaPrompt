@@ -16,7 +16,7 @@ export default function Home() {
     style: string;
     characterName: string;
     useCharacter: boolean;
-    referenceImage?: string;
+    referenceImages?: string[];
   } | null>(null);
 
   const handleGenerate = useCallback(
@@ -25,7 +25,7 @@ export default function Home() {
       style: string;
       characterName: string;
       useCharacter: boolean;
-      referenceImage?: string;
+      referenceImages?: string[];
     }) => {
       setIsLoading(true);
       setError(null);
@@ -86,7 +86,7 @@ export default function Home() {
         isLoading={isLoading}
         error={error}
         onRegenerate={handleRegenerate}
-        hasReferenceImage={!!lastInput?.referenceImage}
+        hasReferenceImage={!!(lastInput?.referenceImages && lastInput.referenceImages.length > 0)}
       />
 
       <Footer />

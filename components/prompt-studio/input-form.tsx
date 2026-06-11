@@ -21,7 +21,7 @@ interface InputFormProps {
     style: string;
     characterName: string;
     useCharacter: boolean;
-    referenceImage?: string;
+    referenceImages?: string[];
   }) => void;
   isLoading: boolean;
 }
@@ -33,17 +33,31 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [characterName, setCharacterName] = useState("");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    const remainingSlots = 2 - referenceImages.length;
+    const filesToAdd = files.slice(0, remainingSlots);
+
+    filesToAdd.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setReferenceImage(reader.result as string);
+        setReferenceImages((prev) => {
+          if (prev.length >= 2) return prev;
+          return [...prev, reader.result as string];
+        });
       };
       reader.readAsDataURL(file);
-    }
+    });
+    
+    e.target.value = '';
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setReferenceImages((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleEnhance = async () => {
@@ -77,7 +91,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       style: selectedStyle,
       characterName: characterName.trim(),
       useCharacter,
-      referenceImage: referenceImage || undefined,
+      referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
     });
   };
 
@@ -165,40 +179,49 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             {/* Reference Image Upload */}
             <div className="mt-4">
               <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">
-                Reference Image (Optional)
+                Reference Images (Optional, Max 2)
               </label>
               <div className="flex items-center gap-4">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="reference-image-upload"
-                  disabled={isLoading}
-                />
-                <label
-                  htmlFor="reference-image-upload"
-                  className={`flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors cursor-pointer border border-white/10 ${
-                    isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5 text-white/70"
-                  }`}
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  {referenceImage ? "Change Image" : "Upload Image"}
-                </label>
-                {referenceImage && (
-                  <div className="relative group">
-                    <img src={referenceImage} alt="Reference" className="h-10 w-10 object-cover rounded border border-white/20" />
-                    <button
-                      type="button"
-                      onClick={() => setReferenceImage(null)}
-                      className="absolute -top-2 -right-2 bg-black text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity border border-white/20"
+                {referenceImages.length < 2 && (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="reference-image-upload"
+                      disabled={isLoading}
+                    />
+                    <label
+                      htmlFor="reference-image-upload"
+                      className={`flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors cursor-pointer border border-white/10 ${
+                        isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5 text-white/70"
+                      }`}
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
-                    </button>
+                      Upload Image{referenceImages.length === 1 ? "" : "s"}
+                    </label>
+                  </>
+                )}
+                {referenceImages.length > 0 && (
+                  <div className="flex gap-2">
+                    {referenceImages.map((img, i) => (
+                      <div key={i} className="relative group">
+                        <img src={img} alt={`Reference ${i + 1}`} className="h-10 w-10 object-cover rounded border border-white/20" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute -top-2 -right-2 bg-black text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity border border-white/20"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
