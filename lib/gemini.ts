@@ -337,6 +337,14 @@ function buildUserParts(payload: GeneratePayload): any[] {
 
   let userMessage = `Selected Styles to Blend: ${payload.styles.join(", ")}\n`;
 
+  if (payload.styleDirectives && payload.styleDirectives.length > 0) {
+    userMessage += `\nStyle directives — apply these aesthetics precisely, blending them where they overlap. They control look and mood only and must NEVER override the user's subject or action:\n`;
+    payload.styleDirectives.forEach((s) => {
+      userMessage += `- ${s.label}: ${s.directive}\n`;
+    });
+    userMessage += `\n`;
+  }
+
   if (payload.mode === "standard") {
     if (payload.useCharacter && payload.characterName) {
       userMessage += `Character name for consistency: <character_name>${payload.characterName}</character_name>\n`;
