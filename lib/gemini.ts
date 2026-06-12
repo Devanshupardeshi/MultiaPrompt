@@ -239,6 +239,7 @@ INSTRUCTIONS:
 - You must analyze the uploaded logo/design image and describe it VISUALLY in extreme detail within the prompt (shape, font style, colors, iconography, serif/sans-serif, thickness, etc.). 
 - Since the final image generator will only receive your text, if you just say "the Multia logo", it will hallucinate a random logo. You MUST describe exactly what the logo looks like so the AI can attempt to draw it.
 - CRITICAL: Add strong instructions inside the "prompt" and "negative_prompt" explicitly forbidding the image generator from altering, redesigning, or hallucinating the logo. The geometric shape, fonts, and layout of the logo must remain EXACTLY as described.
+- AVOID TEXTURED MATERIALS FOR THE LOGO: Do NOT use words like "embroidered", "embossed", "engraved", or "woven" to describe how the logo is applied. These words force image generators to add thread/texture lines which inherently distort the exact geometric shape of the logo. Instead, describe the logo application as a "clean, perfectly flat, high-definition screen print" or "exact crisp decal" to preserve the 1:1 shape.
 - Generate ultra-realistic commercial-quality mockups.
 `;
     if (payload.logoImage) {
