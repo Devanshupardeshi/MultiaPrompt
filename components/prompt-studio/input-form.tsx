@@ -22,6 +22,21 @@ const STYLE_PRESETS = [
   { id: "cinematic", label: "Cinematic" },
 ];
 
+const MOCKUP_TYPES = [
+  { id: "business-card", label: "Business Card" },
+  { id: "letterhead", label: "Letterhead" },
+  { id: "envelope", label: "Envelope" },
+  { id: "email-signature", label: "Email Signature" },
+  { id: "id-badge", label: "ID Badge" },
+  { id: "paper-bag", label: "Paper Bag" },
+  { id: "packaging-box", label: "Packaging Box" },
+  { id: "apparel", label: "Apparel (T-Shirt/Hoodie)" },
+  { id: "mug", label: "Coffee Mug" },
+  { id: "smartphone", label: "Smartphone Screen" },
+  { id: "laptop", label: "Laptop Screen" },
+  { id: "billboard", label: "Billboard / OOH" },
+];
+
 export type GenerationMode = "standard" | "face_swap" | "mockup";
 
 export interface GeneratePayload {
@@ -37,6 +52,7 @@ export interface GeneratePayload {
   mockupReferenceImage?: string;
   logoDescription?: string;
   mockupCount?: number;
+  mockupTypes?: string[];
 }
 
 interface InputFormProps {
@@ -63,6 +79,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [mockupReferenceImage, setMockupReferenceImage] = useState<string | null>(null);
   const [logoDescription, setLogoDescription] = useState("");
   const [mockupCount, setMockupCount] = useState<number>(1);
+  const [selectedMockupTypes, setSelectedMockupTypes] = useState<string[]>([]);
 
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
@@ -110,6 +127,14 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
     );
   };
 
+  const toggleMockupType = (typeId: string) => {
+    setSelectedMockupTypes(prev => 
+      prev.includes(typeId) 
+        ? prev.filter(s => s !== typeId)
+        : [...prev, typeId]
+    );
+  };
+
   const handleEnhance = async () => {
     if (!description.trim() || isEnhancing) return;
     setIsEnhancing(true);
@@ -150,8 +175,9 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       targetPoseImage: targetPoseImage || undefined,
       logoImage: logoImage || undefined,
       mockupReferenceImage: mockupReferenceImage || undefined,
-      logoDescription: logoDescription.trim(),
+      logoDescription: logoDescription || undefined,
       mockupCount,
+      mockupTypes: selectedMockupTypes.length > 0 ? selectedMockupTypes : undefined,
     });
   };
 
@@ -326,6 +352,25 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                   {mockupReferenceImage ? "Additional Instructions / Design Context (Optional)" : "What is your logo/design about? (Required if no reference)"}
                 </label>
                 <input type="text" value={logoDescription} onChange={(e) => setLogoDescription(e.target.value)} placeholder="e.g., Luxury coffee brand, modern SaaS company..." className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Mockup Types (Optional)</label>
+                <div className="flex flex-wrap gap-2">
+                  {MOCKUP_TYPES.map(type => (
+                    <button
+                      key={type.id}
+                      onClick={() => toggleMockupType(type.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                        selectedMockupTypes.includes(type.id)
+                          ? "bg-white text-black border-white"
+                          : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

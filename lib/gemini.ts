@@ -257,6 +257,11 @@ INSTRUCTIONS:
       userMessage += `- NO MOCKUP REFERENCE PROVIDED. You have FULL CREATIVE FREEDOM! Imagine dynamic, high-end professional photoshoots to showcase the logo. Feel free to incorporate fashion models, luxury lifestyle settings, unique objects, or immersive cinematic environments. The mockups must look like a world-class professional commercial shoot.\n`;
     }
 
+    if (payload.mockupTypes && payload.mockupTypes.length > 0) {
+      const typesList = payload.mockupTypes.map(t => t.replace("-", " ")).join(", ");
+      userMessage += `\n- SPECIFIC MOCKUP TYPES REQUESTED: ${typesList.toUpperCase()}. Your generated prompt MUST specifically design mockups for these exact items. Make them incredibly accurate, highly detailed, and perfectly staged for a commercial presentation.\n`;
+    }
+
     if (payload.mockupCount && payload.mockupCount > 1) {
       userMessage += `\n- The user requested ${payload.mockupCount} mockups. You MUST design the prompt to generate a single image that is a COLLAGE or GRID layout showing ${payload.mockupCount} different variations/angles of the mockup in the same image.
 - Set output.type to "multi-panel" and output.layout to describe the grid (e.g., "2x2_grid", "1x3_grid").
