@@ -236,7 +236,9 @@ INSTRUCTIONS:
   } else if (payload.mode === "mockup") {
     userMessage += `\n[MODE: MOCKUP GENERATION]
 INSTRUCTIONS:
-- Use the uploaded logo/design exactly. Do not redesign the logo or modify brand elements.
+- You must analyze the uploaded logo/design image and describe it VISUALLY in extreme detail within the prompt (shape, font style, colors, iconography, serif/sans-serif, thickness, etc.). 
+- Since the final image generator will only receive your text, if you just say "the Multia logo", it will hallucinate a random logo. You MUST describe exactly what the logo looks like so the AI can attempt to draw it.
+- CRITICAL: Add strong instructions inside the "prompt" and "negative_prompt" explicitly forbidding the image generator from altering, redesigning, or hallucinating the logo. The geometric shape, fonts, and layout of the logo must remain EXACTLY as described.
 - Generate ultra-realistic commercial-quality mockups.
 `;
     if (payload.logoImage) {
