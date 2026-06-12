@@ -178,6 +178,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       logoDescription: logoDescription || undefined,
       mockupCount,
       mockupTypes: selectedMockupTypes.length > 0 ? selectedMockupTypes : undefined,
+      targetModel,
     });
   };
 
