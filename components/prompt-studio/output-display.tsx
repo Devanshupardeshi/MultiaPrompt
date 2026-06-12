@@ -7,7 +7,7 @@ interface OutputDisplayProps {
   isLoading: boolean;
   error: string | null;
   onRegenerate: () => void;
-  hasReferenceImage?: boolean;
+  hasImage?: boolean;
 }
 
 function syntaxHighlight(json: string): string {
@@ -36,7 +36,7 @@ export function OutputDisplay({
   isLoading,
   error,
   onRegenerate,
-  hasReferenceImage,
+  hasImage,
 }: OutputDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -151,7 +151,7 @@ export function OutputDisplay({
         )}
 
         {/* Reference Image Reminder */}
-        {hasReferenceImage && json && !isLoading && (
+        {hasImage && json && !isLoading && (
           <div className="border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-4 mb-4 flex gap-3 items-start">
             <span className="text-yellow-500/80 text-lg leading-none">💡</span>
             <div>

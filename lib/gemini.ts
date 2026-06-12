@@ -214,7 +214,7 @@ export async function generatePrompt(payload: GeneratePayload, retryCount = 0): 
 
   if (payload.mode === "standard") {
     userMessage += `${payload.useCharacter && payload.characterName ? `Character name for consistency: ${payload.characterName}\n` : ""}`;
-    
+
     if (payload.referenceImages && payload.referenceImages.length > 0) {
       userMessage += `[IMPORTANT: Reference image(s) are attached.
 Analyze the attached reference image(s) and determine the primary focus of each:
@@ -238,10 +238,10 @@ INSTRUCTIONS:
     if (payload.description) {
       userMessage += `\nAdditional user instructions: ${payload.description}\n`;
     }
-    
+
     if (payload.sourceFaceImage) addImagePart(payload.sourceFaceImage);
     if (payload.targetPoseImage) addImagePart(payload.targetPoseImage);
-    
+
   } else if (payload.mode === "mockup") {
     userMessage += `\n[MODE: MOCKUP GENERATION]
 INSTRUCTIONS:
@@ -252,14 +252,14 @@ INSTRUCTIONS:
       userMessage += `- First attached image: Logo/Design. Priority 1.\n`;
       addImagePart(payload.logoImage);
     }
-    
+
     if (payload.mockupReferenceImage) {
       userMessage += `- Second attached image: Mockup Reference. Recreate this reference mockup style as accurately as possible (materials, environment, camera angle). Priority 2.\n`;
       addImagePart(payload.mockupReferenceImage);
     } else if (payload.logoDescription) {
       userMessage += `- Logo description provided: "${payload.logoDescription}". Select the most relevant presentation style (e.g. Packaging, Business cards, Apparel) based on this description.\n`;
     }
-    
+
     userMessage += `\nTotal distinct mockups to generate: ${payload.mockupCount || 1}\n`;
   }
 

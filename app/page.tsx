@@ -76,7 +76,15 @@ export default function Home() {
         isLoading={isLoading}
         error={error}
         onRegenerate={handleRegenerate}
-        hasReferenceImage={!!(lastInput?.referenceImages && lastInput.referenceImages.length > 0)}
+        hasImage={
+          !!(
+            (lastInput?.referenceImages && lastInput.referenceImages.length > 0) ||
+            lastInput?.sourceFaceImage ||
+            lastInput?.targetPoseImage ||
+            lastInput?.logoImage ||
+            lastInput?.mockupReferenceImage
+          )
+        }
       />
 
       <Footer />
