@@ -403,6 +403,22 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             </div>
           </div>
 
+          {/* Target image model selector */}
+          <div className="mb-8">
+            <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Image Model</label>
+            <div className="flex gap-2">
+              {([["nano-banana-pro", "Nano Banana Pro"], ["gpt-image", "GPT Image"]] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setTargetModel(id)}
+                  className={`px-4 py-2 rounded text-sm transition-colors ${targetModel === id ? "bg-white text-black" : "bg-white/10 text-white/70 hover:bg-white/20"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Generate button */}
           <button
             onClick={handleSubmit}
