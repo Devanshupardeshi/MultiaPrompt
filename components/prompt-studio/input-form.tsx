@@ -51,6 +51,7 @@ export interface GeneratePayload {
   logoDescription?: string;
   mockupCount?: number;
   mockupTypes?: string[];
+  targetModel?: "nano-banana-pro" | "gpt-image";
 }
 
 interface InputFormProps {
