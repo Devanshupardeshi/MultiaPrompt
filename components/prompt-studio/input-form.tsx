@@ -63,6 +63,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [mode, setMode] = useState<GenerationMode>("standard");
   const [description, setDescription] = useState("");
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["photorealistic"]);
+  const [targetModel, setTargetModel] = useState<"nano-banana-pro" | "gpt-image">("nano-banana-pro");
   
   // Standard specific
   const [useCharacter, setUseCharacter] = useState(false);
