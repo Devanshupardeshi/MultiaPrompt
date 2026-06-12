@@ -55,6 +55,71 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [description, setDescription] = useState("");
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["photorealistic"]);
   const [targetModel, setTargetModel] = useState<"nano-banana-pro" | "gpt-image">("nano-banana-pro");
+
+  // Custom styles extracted from reference images (persisted in localStorage)
+  const [customStyles, setCustomStyles] = useState<CustomStyle[]>([]);
+  const [isExtractingStyle, setIsExtractingStyle] = useState(false);
+  const [styleError, setStyleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("bananavault-custom-styles");
+      if (saved) setCustomStyles(JSON.parse(saved));
+    } catch {
+      // ignore corrupted storage
+    }
+  }, []);
+
+  const persistCustomStyles = (updater: (prev: CustomStyle[]) => CustomStyle[]) => {
+    setCustomStyles((prev) => {
+      const next = updater(prev);
+      try {
+        localStorage.setItem("bananavault-custom-styles", JSON.stringify(next));
+      } catch {
+        // storage full or unavailable — keep in-memory only
+      }
+      return next;
+    });
+  };
+
+  const handleStyleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setIsExtractingStyle(true);
+      setStyleError(null);
+      try {
+        const res = await fetch("/api/extract-style", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Failed to extract style");
+        const newStyle: CustomStyle = {
+          id: `custom-${Date.now()}`,
+          label: data.name,
+          directive: data.directive,
+          thumbnail: base64,
+        };
+        persistCustomStyles((prev) => [...prev, newStyle]);
+        setSelectedStyles((prev) => [...prev, newStyle.id]);
+      } catch (err) {
+        setStyleError(err instanceof Error ? err.message : "Failed to extract style");
+      } finally {
+        setIsExtractingStyle(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const removeCustomStyle = (id: string) => {
+    persistCustomStyles((prev) => prev.filter((s) => s.id !== id));
+    setSelectedStyles((prev) => prev.filter((s) => s !== id));
+  };
   
   // Standard specific
   const [useCharacter, setUseCharacter] = useState(false);
