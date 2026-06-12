@@ -455,20 +455,78 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             </div>
           )}
 
-          {/* Style presets (Multi-select) */}
+          {/* Visual style picker (Multi-select) */}
           <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Styles (Select Multiple)</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {STYLE_PRESETS.map((style) => (
                 <button
                   key={style.id}
                   onClick={() => toggleStyle(style.id)}
-                  className={`style-pill ${selectedStyles.includes(style.id) ? "active" : ""}`}
+                  title={style.directive}
+                  className={`relative h-20 rounded-lg overflow-hidden border transition-all text-left ${
+                    selectedStyles.includes(style.id)
+                      ? "border-white ring-1 ring-white"
+                      : "border-white/10 hover:border-white/40"
+                  }`}
                 >
-                  {style.label}
+                  <div className="absolute inset-0" style={{ background: style.swatch }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <span className="absolute bottom-1.5 left-2 right-1 text-[11px] font-body text-white/90 leading-tight">{style.label}</span>
+                  {selectedStyles.includes(style.id) && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white text-black text-[10px] flex items-center justify-center">✓</span>
+                  )}
                 </button>
               ))}
+
+              {customStyles.map((style) => (
+                <div key={style.id} className="relative group">
+                  <button
+                    onClick={() => toggleStyle(style.id)}
+                    title={style.directive}
+                    className={`relative w-full h-20 rounded-lg overflow-hidden border transition-all text-left ${
+                      selectedStyles.includes(style.id)
+                        ? "border-white ring-1 ring-white"
+                        : "border-white/10 hover:border-white/40"
+                    }`}
+                  >
+                    <img src={style.thumbnail} alt={style.label} className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <span className="absolute bottom-1.5 left-2 right-1 text-[11px] font-body text-white/90 leading-tight">{style.label}</span>
+                    {selectedStyles.includes(style.id) && (
+                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white text-black text-[10px] flex items-center justify-center">✓</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => removeCustomStyle(style.id)}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-black text-white text-[10px] rounded-full border border-white/30 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-center justify-center"
+                    title="Delete custom style"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              {/* Add custom style from a reference image */}
+              <label
+                className={`relative h-20 rounded-lg border border-dashed border-white/20 hover:border-white/50 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors ${
+                  isExtractingStyle ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleStyleImageUpload}
+                  className="hidden"
+                  disabled={isLoading || isExtractingStyle}
+                />
+                <span className="text-lg text-white/40 leading-none">＋</span>
+                <span className="text-[10px] text-white/40 font-body uppercase tracking-wider text-center px-1">
+                  {isExtractingStyle ? "Analyzing..." : "From Image"}
+                </span>
+              </label>
             </div>
+            {styleError && <p className="text-xs text-red-400 mt-2 font-body">{styleError}</p>}
           </div>
 
           {/* Target image model selector */}
