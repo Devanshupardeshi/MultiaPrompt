@@ -27,8 +27,6 @@ function getNextKey(): string {
 }
 
 function getSystemPrompt(payload: GeneratePayload): string {
-  const isMockupArray = payload.mode === "mockup" && (payload.mockupCount || 1) > 1;
-
   const basePrompt = `You are the BananaVault Prompt Engine — a professional JSON prompt generator for AI image generation. 
 
 When the user describes what they want, you MUST output ONLY a valid JSON object following the BananaVault schema below. No explanation, no markdown, no code fences — just raw JSON.
@@ -129,13 +127,6 @@ When the user describes what they want, you MUST output ONLY a valid JSON object
 5. Be cinematographically specific: mention focal lengths (85mm, 35mm), apertures (f/1.8, f/5.6), ISO values.
 6. Include realistic skin textures, material descriptions, and environmental details.
 7. DO NOT wrap in markdown code blocks. Output raw JSON only.`;
-
-  if (isMockupArray) {
-    return basePrompt.replace("ONLY a valid JSON object", "ONLY a JSON array of valid JSON objects")
-      .replace("## BananaVault JSON Schema\n\n{", "## BananaVault JSON Schema\n\n[\n  {")
-      .replace("  }\n}", "  }\n}\n]")
-      + `\n\n8. IMPORTANT: Because the user requested ${payload.mockupCount} mockups, you MUST output a JSON Array containing EXACTLY ${payload.mockupCount} distinct JSON objects matching the schema.`;
-  }
 
   return basePrompt;
 }
@@ -260,7 +251,11 @@ INSTRUCTIONS:
       userMessage += `- Logo description provided: "${payload.logoDescription}". Select the most relevant presentation style (e.g. Packaging, Business cards, Apparel) based on this description.\n`;
     }
 
-    userMessage += `\nTotal distinct mockups to generate: ${payload.mockupCount || 1}\n`;
+    if (payload.mockupCount && payload.mockupCount > 1) {
+      userMessage += `\n- The user requested ${payload.mockupCount} mockups. You MUST design the prompt to generate a single image that is a COLLAGE or GRID layout showing ${payload.mockupCount} different variations/angles of the mockup in the same image.
+- Set output.type to "multi-panel" and output.layout to describe the grid (e.g., "2x2_grid", "1x3_grid").
+- In the "prompt" field, explicitly start by asking for a "Split-screen grid layout showing ${payload.mockupCount} different mockup variations...".\n`;
+    }
   }
 
   userMessage += `\nGenerate the complete BananaVault JSON prompt now.`;
