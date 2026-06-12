@@ -247,17 +247,35 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Source Face Image (Required)</label>
-                <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
-                  <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setSourceFaceImage)} className="hidden" disabled={isLoading} />
-                  {sourceFaceImage ? <img src={sourceFaceImage} alt="Source Face" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Face</span>}
-                </label>
+                <div className="relative h-40 border-2 border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors overflow-hidden">
+                  {sourceFaceImage ? (
+                    <>
+                      <img src={sourceFaceImage} alt="Source Face" className="w-full h-full object-cover" />
+                      <button onClick={(e) => { e.preventDefault(); setSourceFaceImage(null); }} className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 z-10">✕</button>
+                    </>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                      <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setSourceFaceImage)} className="hidden" disabled={isLoading} />
+                      <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Face</span>
+                    </label>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Pose Image (Required)</label>
-                <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
-                  <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setTargetPoseImage)} className="hidden" disabled={isLoading} />
-                  {targetPoseImage ? <img src={targetPoseImage} alt="Target Pose" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Pose</span>}
-                </label>
+                <div className="relative h-40 border-2 border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors overflow-hidden">
+                  {targetPoseImage ? (
+                    <>
+                      <img src={targetPoseImage} alt="Target Pose" className="w-full h-full object-cover" />
+                      <button onClick={(e) => { e.preventDefault(); setTargetPoseImage(null); }} className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 z-10">✕</button>
+                    </>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                      <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setTargetPoseImage)} className="hidden" disabled={isLoading} />
+                      <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Pose</span>
+                    </label>
+                  )}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Additional Instructions (Optional)</label>
@@ -271,26 +289,44 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Logo/Design Image (Required)</label>
-                  <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
-                    <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setLogoImage)} className="hidden" disabled={isLoading} />
-                    {logoImage ? <img src={logoImage} alt="Logo" className="w-full h-full object-contain p-2" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Logo</span>}
-                  </label>
+                  <div className="relative h-40 border-2 border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors overflow-hidden">
+                    {logoImage ? (
+                      <>
+                        <img src={logoImage} alt="Logo" className="w-full h-full object-contain p-2" />
+                        <button onClick={(e) => { e.preventDefault(); setLogoImage(null); }} className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 z-10">✕</button>
+                      </>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                        <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setLogoImage)} className="hidden" disabled={isLoading} />
+                        <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Logo</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Mockup Reference (Optional)</label>
-                  <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
-                    <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setMockupReferenceImage)} className="hidden" disabled={isLoading} />
-                    {mockupReferenceImage ? <img src={mockupReferenceImage} alt="Reference" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Reference</span>}
-                  </label>
+                  <div className="relative h-40 border-2 border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors overflow-hidden">
+                    {mockupReferenceImage ? (
+                      <>
+                        <img src={mockupReferenceImage} alt="Reference" className="w-full h-full object-cover" />
+                        <button onClick={(e) => { e.preventDefault(); setMockupReferenceImage(null); }} className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 z-10">✕</button>
+                      </>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                        <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setMockupReferenceImage)} className="hidden" disabled={isLoading} />
+                        <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Reference</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              {!mockupReferenceImage && (
-                <div>
-                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">What is your logo/design about? (Required if no reference)</label>
-                  <input type="text" value={logoDescription} onChange={(e) => setLogoDescription(e.target.value)} placeholder="e.g., Luxury coffee brand, modern SaaS company..." className="input-multia w-full px-4 py-3 text-sm" />
-                </div>
-              )}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">
+                  {mockupReferenceImage ? "Additional Instructions / Design Context (Optional)" : "What is your logo/design about? (Required if no reference)"}
+                </label>
+                <input type="text" value={logoDescription} onChange={(e) => setLogoDescription(e.target.value)} placeholder="e.g., Luxury coffee brand, modern SaaS company..." className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
 
               <div>
                 <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Mockup Count</label>
