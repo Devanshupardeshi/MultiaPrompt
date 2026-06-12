@@ -220,10 +220,21 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
 
   const handleSubmit = () => {
     if (!isValid()) return;
+
+    const activeStyleIds = selectedStyles.length > 0 ? selectedStyles : ["photorealistic"];
+    const idToLabel = new Map<string, string>([
+      ...STYLE_PRESETS.map((p) => [p.id, p.label] as const),
+      ...customStyles.map((c) => [c.id, c.label] as const),
+    ]);
+    const styleDirectives = [
+      ...STYLE_PRESETS.filter((p) => activeStyleIds.includes(p.id)).map((p) => ({ label: p.label, directive: p.directive })),
+      ...customStyles.filter((c) => activeStyleIds.includes(c.id)).map((c) => ({ label: c.label, directive: c.directive })),
+    ];
+
     onGenerate({
       mode,
       description: description.trim(),
-      styles: selectedStyles.length > 0 ? selectedStyles : ["photorealistic"],
+      styles: activeStyleIds.map((id) => idToLabel.get(id) ?? id),
       characterName: characterName.trim(),
       useCharacter,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
@@ -235,6 +246,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       mockupCount,
       mockupTypes: selectedMockupTypes.length > 0 ? selectedMockupTypes : undefined,
       targetModel,
+      styleDirectives: styleDirectives.length > 0 ? styleDirectives : undefined,
     });
   };
 
