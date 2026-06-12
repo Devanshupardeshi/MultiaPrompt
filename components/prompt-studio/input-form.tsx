@@ -35,6 +35,14 @@ export interface GeneratePayload {
   mockupCount?: number;
   mockupTypes?: string[];
   targetModel?: "nano-banana-pro" | "gpt-image";
+  styleDirectives?: { label: string; directive: string }[];
+}
+
+export interface CustomStyle {
+  id: string;
+  label: string;
+  directive: string;
+  thumbnail: string;
 }
 
 interface InputFormProps {
