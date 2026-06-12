@@ -571,3 +571,71 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
 
   throw new Error(`Failed to generate a valid JSON prompt after repair retry: ${result.error}`);
 }
+
+// ---------------------------------------------------------------------------
+// Style extraction — turns a reference image into a reusable style directive.
+// ---------------------------------------------------------------------------
+
+const STYLE_EXTRACTION_SYSTEM_PROMPT = `You are a visual style analyst for AI image generation.
+Analyze the attached image and extract ONLY its reusable visual style — never its specific subjects, people, objects, or text.
+Cover: lighting setup and direction, color grading and palette, contrast and dynamic range, camera/lens character (focal length, aperture, film stock or digital look), texture and grain, composition tendencies, and overall mood.
+The directive must work when applied to a completely different subject.`;
+
+const STYLE_EXTRACTION_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    name: {
+      type: "STRING",
+      description: "A short 1-3 word name for this visual style, such as a film-stock, movement, or mood name.",
+    },
+    directive: {
+      type: "STRING",
+      description:
+        "A dense 60-100 word aesthetic directive covering lighting, color grading, contrast, camera/lens character, texture/grain, composition tendencies, and mood. Style only — never mention the specific subjects in the image.",
+    },
+  },
+  required: ["name", "directive"],
+};
+
+export async function extractStyle(imageBase64: string): Promise<{ name: string; directive: string }> {
+  const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error("Invalid image data. Expected a base64 data URL.");
+  }
+
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: "Extract the reusable visual style of this image as a directive." },
+          { inlineData: { mimeType: matches[1], data: matches[2] } },
+        ],
+      },
+    ],
+    systemInstruction: { parts: [{ text: STYLE_EXTRACTION_SYSTEM_PROMPT }] },
+    generationConfig: {
+      temperature: 0.3,
+      topP: 0.9,
+      topK: 40,
+      maxOutputTokens: 1024,
+      responseMimeType: "application/json",
+      responseSchema: STYLE_EXTRACTION_SCHEMA,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
+
+  const text = await callGemini(body);
+  const parsed = JSON.parse(text);
+
+  if (
+    typeof parsed?.name !== "string" ||
+    typeof parsed?.directive !== "string" ||
+    !parsed.name.trim() ||
+    !parsed.directive.trim()
+  ) {
+    throw new Error("Style extraction returned incomplete data");
+  }
+
+  return { name: parsed.name.trim(), directive: parsed.directive.trim() };
+}
