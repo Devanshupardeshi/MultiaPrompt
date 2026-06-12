@@ -9,13 +9,11 @@ const STYLE_PRESETS = [
   { id: "modern", label: "Modern" },
   { id: "premium", label: "Premium" },
   { id: "futuristic", label: "Futuristic" },
-  { id: "cyberpunk", label: "Cyberpunk" },
   { id: "vintage", label: "Vintage" },
   { id: "industrial", label: "Industrial" },
   { id: "streetwear", label: "Streetwear" },
   { id: "tech", label: "Tech" },
   { id: "elegant", label: "Elegant" },
-  { id: "dark-mode", label: "Dark Mode" },
   { id: "glassmorphism", label: "Glassmorphism" },
   { id: "3d-render", label: "3D Render" },
   { id: "photorealistic", label: "Photorealistic" },
@@ -227,7 +225,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                       : "bg-white/10 hover:bg-white/20 text-white/80"
                   }`}
                 >
-                  {isEnhancing ? "Enhancing..." : "✨ Magic Enhance"}
+                  {isEnhancing ? "Enhancing..." : "Magic Enhance"}
                 </button>
               </div>
 

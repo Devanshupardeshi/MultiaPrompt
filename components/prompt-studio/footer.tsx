@@ -10,7 +10,7 @@ export function Footer() {
         </div>
         
         <p className="text-xs text-white/25 font-body">
-          © {new Date().getFullYear()} Multia. Prompt Studio powered by BananaVault.
+          © {new Date().getFullYear()} Multia. Prompt Studio.
         </p>
 
         <a
