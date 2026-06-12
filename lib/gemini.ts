@@ -250,8 +250,11 @@ INSTRUCTIONS:
     if (payload.mockupReferenceImage) {
       userMessage += `- Second attached image: Mockup Reference. Recreate this reference mockup style as accurately as possible (materials, environment, camera angle). Priority 2.\n`;
       addImagePart(payload.mockupReferenceImage);
-    } else if (payload.logoDescription) {
-      userMessage += `- Logo description provided: "${payload.logoDescription}". Select the most relevant presentation style (e.g. Packaging, Business cards, Apparel) based on this description.\n`;
+    } else {
+      if (payload.logoDescription) {
+        userMessage += `- Logo description provided: "${payload.logoDescription}".\n`;
+      }
+      userMessage += `- NO MOCKUP REFERENCE PROVIDED. You have FULL CREATIVE FREEDOM! Imagine dynamic, high-end professional photoshoots to showcase the logo. Feel free to incorporate fashion models, luxury lifestyle settings, unique objects, or immersive cinematic environments. The mockups must look like a world-class professional commercial shoot.\n`;
     }
 
     if (payload.mockupCount && payload.mockupCount > 1) {
