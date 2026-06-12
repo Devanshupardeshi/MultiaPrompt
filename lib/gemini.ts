@@ -243,12 +243,12 @@ INSTRUCTIONS:
 - Generate ultra-realistic commercial-quality mockups.
 `;
     if (payload.logoImage) {
-      userMessage += `- First attached image: Logo/Design. Priority 1.\n`;
+      userMessage += `- [IMAGE 1] LOGO/DESIGN. Priority 1. You MUST extract its visual details exactly.\n`;
       addImagePart(payload.logoImage);
     }
 
     if (payload.mockupReferenceImage) {
-      userMessage += `- Second attached image: Mockup Reference. Recreate this reference mockup style as accurately as possible (materials, environment, camera angle). Priority 2.\n`;
+      userMessage += `- [IMAGE 2] MOCKUP REFERENCE. Priority 2. You MUST deeply analyze this reference image to identify the physical object (e.g., a kraft paper bag, a billboard, a t-shirt), the environment, and the camera angle. Your generated prompt MUST describe this exact type of object and scene. Do NOT invent a different scene or subject (e.g., do not generate a fashion model if the reference is a paper bag).\n`;
       addImagePart(payload.mockupReferenceImage);
     } else {
       if (payload.logoDescription) {
