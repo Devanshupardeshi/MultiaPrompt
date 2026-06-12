@@ -1,24 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-
-const STYLE_PRESETS = [
-  { id: "minimalist", label: "Minimalist" },
-  { id: "luxury", label: "Luxury" },
-  { id: "corporate", label: "Corporate" },
-  { id: "modern", label: "Modern" },
-  { id: "premium", label: "Premium" },
-  { id: "futuristic", label: "Futuristic" },
-  { id: "vintage", label: "Vintage" },
-  { id: "industrial", label: "Industrial" },
-  { id: "streetwear", label: "Streetwear" },
-  { id: "tech", label: "Tech" },
-  { id: "elegant", label: "Elegant" },
-  { id: "glassmorphism", label: "Glassmorphism" },
-  { id: "3d-render", label: "3D Render" },
-  { id: "photorealistic", label: "Photorealistic" },
-  { id: "cinematic", label: "Cinematic" },
-];
+import React, { useState, useEffect } from "react";
+import { STYLE_PRESETS } from "@/lib/style-presets";
 
 const MOCKUP_TYPES = [
   { id: "business-card", label: "Business Card" },
