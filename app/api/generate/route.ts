@@ -4,23 +4,20 @@ import { generatePrompt } from "@/lib/gemini";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { description, style, characterName, useCharacter, referenceImages } = body;
+    const payload = body;
 
-    if (!description || typeof description !== "string" || !description.trim()) {
-      return NextResponse.json(
-        { error: "Description is required" },
-        { status: 400 }
-      );
+    // Basic validation based on mode
+    if (payload.mode === "standard" && (!payload.description || !payload.description.trim())) {
+      return NextResponse.json({ error: "Description is required for standard mode" }, { status: 400 });
+    }
+    if (payload.mode === "face_swap" && (!payload.sourceFaceImage || !payload.targetPoseImage)) {
+      return NextResponse.json({ error: "Source Face and Target Pose images are required for face swap mode" }, { status: 400 });
+    }
+    if (payload.mode === "mockup" && (!payload.logoImage)) {
+      return NextResponse.json({ error: "Logo image is required for mockup mode" }, { status: 400 });
     }
 
-    const result = await generatePrompt(
-      description,
-      style || "hyper-realism",
-      characterName || "",
-      useCharacter || false,
-      0, // retryCount
-      referenceImages
-    );
+    const result = await generatePrompt(payload);
 
     return NextResponse.json({ json: result });
   } catch (error) {

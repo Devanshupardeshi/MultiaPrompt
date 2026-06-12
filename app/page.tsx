@@ -7,36 +7,26 @@ import { InputForm } from "@/components/prompt-studio/input-form";
 import { OutputDisplay } from "@/components/prompt-studio/output-display";
 import { Footer } from "@/components/prompt-studio/footer";
 
+import { GenerationMode, GeneratePayload } from "@/components/prompt-studio/input-form";
+
 export default function Home() {
   const [generatedJson, setGeneratedJson] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastInput, setLastInput] = useState<{
-    description: string;
-    style: string;
-    characterName: string;
-    useCharacter: boolean;
-    referenceImages?: string[];
-  } | null>(null);
+  const [lastInput, setLastInput] = useState<GeneratePayload | null>(null);
 
   const handleGenerate = useCallback(
-    async (data: {
-      description: string;
-      style: string;
-      characterName: string;
-      useCharacter: boolean;
-      referenceImages?: string[];
-    }) => {
+    async (payload: GeneratePayload) => {
       setIsLoading(true);
       setError(null);
       setGeneratedJson(null);
-      setLastInput(data);
+      setLastInput(payload);
 
       try {
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
         });
 
         const result = await response.json();

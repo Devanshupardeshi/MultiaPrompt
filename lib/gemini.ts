@@ -1,6 +1,8 @@
 // Gemini API integration with round-robin key rotation
 // Keys are read from environment variables GEMINI_API_KEY_1 through GEMINI_API_KEY_5
 
+import { GeneratePayload } from "@/components/prompt-studio/input-form";
+
 let currentKeyIndex = 0;
 
 function getApiKeys(): string[] {
@@ -24,7 +26,10 @@ function getNextKey(): string {
   return key;
 }
 
-const BANANAVAULT_SYSTEM_PROMPT = `You are the BananaVault Prompt Engine — a professional JSON prompt generator for AI image generation. 
+function getSystemPrompt(payload: GeneratePayload): string {
+  const isMockupArray = payload.mode === "mockup" && (payload.mockupCount || 1) > 1;
+
+  const basePrompt = `You are the BananaVault Prompt Engine — a professional JSON prompt generator for AI image generation. 
 
 When the user describes what they want, you MUST output ONLY a valid JSON object following the BananaVault schema below. No explanation, no markdown, no code fences — just raw JSON.
 
@@ -103,16 +108,37 @@ When the user describes what they want, you MUST output ONLY a valid JSON object
   }
 }
 
+## Global Realism Requirements (MANDATORY FOR ALL MODES):
+- Ultra-realistic output
+- Commercial-grade quality
+- Accurate lighting and shadows
+- Physically realistic materials
+- High-detail textures
+- Correct reflections
+- Proper depth of field
+- Real-world proportions
+- Professional photography standards
+- High-resolution presentation
+- AVOID: Cartoon appearance, AI artifacts, distorted hands/faces, incorrect logo placement, unrealistic materials, hallucinated brand elements.
+
 ## Rules:
 1. ALWAYS output valid JSON. Nothing else.
 2. Fill EVERY field with detailed, specific values — never leave generic placeholders.
 3. The "prompt" field should be a rich, dense paragraph (200+ words) describing every visual detail.
 4. The "negative_prompt" should include 10-20 specific items to avoid.
-5. Adapt your output to the selected style preset.
-6. If a character name is provided, add detailed identity anchoring in the subject fields.
-7. Be cinematographically specific: mention focal lengths (85mm, 35mm), apertures (f/1.8, f/5.6), ISO values.
-8. Include realistic skin textures, material descriptions, and environmental details.
-9. DO NOT wrap in markdown code blocks. Output raw JSON only.`;
+5. Be cinematographically specific: mention focal lengths (85mm, 35mm), apertures (f/1.8, f/5.6), ISO values.
+6. Include realistic skin textures, material descriptions, and environmental details.
+7. DO NOT wrap in markdown code blocks. Output raw JSON only.`;
+
+  if (isMockupArray) {
+    return basePrompt.replace("ONLY a valid JSON object", "ONLY a JSON array of valid JSON objects")
+      .replace("## BananaVault JSON Schema\n\n{", "## BananaVault JSON Schema\n\n[\n  {")
+      .replace("  }\n}", "  }\n}\n]")
+      + `\n\n8. IMPORTANT: Because the user requested ${payload.mockupCount} mockups, you MUST output a JSON Array containing EXACTLY ${payload.mockupCount} distinct JSON objects matching the schema.`;
+  }
+
+  return basePrompt;
+}
 
 const ENHANCE_SYSTEM_PROMPT = `You are a professional prompt engineer specializing in AI image generation.
 Your task is to take a simple, short user idea and expand it into a rich, detailed, and highly descriptive paragraph.
@@ -130,15 +156,8 @@ export async function enhanceDescription(description: string, retryCount = 0): P
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: `Enhance this idea for an image prompt: ${description}` }],
-            },
-          ],
-          systemInstruction: {
-            parts: [{ text: ENHANCE_SYSTEM_PROMPT }],
-          },
+          contents: [{ role: "user", parts: [{ text: `Enhance this idea for an image prompt: ${description}` }] }],
+          systemInstruction: { parts: [{ text: ENHANCE_SYSTEM_PROMPT }] },
           generationConfig: {
             temperature: 0.7,
             topP: 0.9,
@@ -163,10 +182,7 @@ export async function enhanceDescription(description: string, retryCount = 0): P
     const data = await response.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!text) {
-      throw new Error("No content in Gemini enhance response");
-    }
-
+    if (!text) throw new Error("No content in Gemini enhance response");
     return text.trim();
   } catch (error) {
     if (retryCount < maxRetries && error instanceof Error && error.message.includes("429")) {
@@ -176,45 +192,79 @@ export async function enhanceDescription(description: string, retryCount = 0): P
   }
 }
 
-export async function generatePrompt(
-  description: string,
-  style: string,
-  characterName: string,
-  useCharacter: boolean,
-  retryCount = 0,
-  referenceImages?: string[]
-): Promise<string> {
+export async function generatePrompt(payload: GeneratePayload, retryCount = 0): Promise<string> {
   const maxRetries = 5;
   const apiKey = getNextKey();
 
-  const userMessage = `Style preset: ${style}
-${useCharacter && characterName ? `Character name for consistency: ${characterName}` : "No character consistency needed."}
+  let userMessage = `Selected Styles to Blend: ${payload.styles.join(", ")}\n`;
 
-${referenceImages && referenceImages.length > 0 ? `[IMPORTANT: Reference image(s) are attached.
+  const parts: any[] = [];
+
+  const addImagePart = (base64String: string) => {
+    const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      parts.push({
+        inlineData: {
+          mimeType: matches[1],
+          data: matches[2]
+        }
+      });
+    }
+  };
+
+  if (payload.mode === "standard") {
+    userMessage += `${payload.useCharacter && payload.characterName ? `Character name for consistency: ${payload.characterName}\n` : ""}`;
+    
+    if (payload.referenceImages && payload.referenceImages.length > 0) {
+      userMessage += `[IMPORTANT: Reference image(s) are attached.
 Analyze the attached reference image(s) and determine the primary focus of each:
 - If an image primarily features a prominent face/portrait, treat it as a FACE REFERENCE. You MUST describe the character to exactly match that face's likeness.
 - If an image primarily features a pose, landscape, or aesthetic scene, treat it as a STYLE/POSE REFERENCE. Extract its lighting, mood, color grading, pose, and camera style, but DO NOT copy the specific subjects.
-Apply these aesthetics and character details to the user's description below.]\n` : ""}
-User's description (THIS IS THE PRIMARY SUBJECT/ACTION):
-${description}
+Apply these aesthetics and character details to the user's description below.]\n`;
+      payload.referenceImages.forEach(img => addImagePart(img));
+    }
 
-Generate the complete BananaVault JSON prompt now.`;
-
-  const parts: any[] = [{ text: userMessage }];
-
-  if (referenceImages && referenceImages.length > 0) {
-    referenceImages.forEach((img) => {
-      const matches = img.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        parts.push({
-          inlineData: {
-            mimeType: matches[1],
-            data: matches[2]
-          }
-        });
-      }
-    });
+    userMessage += `\nUser's description (THIS IS THE PRIMARY SUBJECT/ACTION):\n${payload.description}\n`;
+  } else if (payload.mode === "face_swap") {
+    userMessage += `\n[MODE: FACE SWAP]
+INSTRUCTIONS:
+- Source Identity = Uploaded Face Image (First attached image).
+- Target Pose = Uploaded Reference Image (Second attached image).
+- Task = Replace the face/person in the target image with the exact person from the source image while preserving pose, camera angle, body position, lighting, and composition.
+- NEVER generate a different face.
+- NEVER alter age, gender, facial structure, skin tone, hairstyle, or identity unless explicitly requested.
+- Face swap accuracy should be prioritized over artistic interpretation.
+`;
+    if (payload.description) {
+      userMessage += `\nAdditional user instructions: ${payload.description}\n`;
+    }
+    
+    if (payload.sourceFaceImage) addImagePart(payload.sourceFaceImage);
+    if (payload.targetPoseImage) addImagePart(payload.targetPoseImage);
+    
+  } else if (payload.mode === "mockup") {
+    userMessage += `\n[MODE: MOCKUP GENERATION]
+INSTRUCTIONS:
+- Use the uploaded logo/design exactly. Do not redesign the logo or modify brand elements.
+- Generate ultra-realistic commercial-quality mockups.
+`;
+    if (payload.logoImage) {
+      userMessage += `- First attached image: Logo/Design. Priority 1.\n`;
+      addImagePart(payload.logoImage);
+    }
+    
+    if (payload.mockupReferenceImage) {
+      userMessage += `- Second attached image: Mockup Reference. Recreate this reference mockup style as accurately as possible (materials, environment, camera angle). Priority 2.\n`;
+      addImagePart(payload.mockupReferenceImage);
+    } else if (payload.logoDescription) {
+      userMessage += `- Logo description provided: "${payload.logoDescription}". Select the most relevant presentation style (e.g. Packaging, Business cards, Apparel) based on this description.\n`;
+    }
+    
+    userMessage += `\nTotal distinct mockups to generate: ${payload.mockupCount || 1}\n`;
   }
+
+  userMessage += `\nGenerate the complete BananaVault JSON prompt now.`;
+  parts.unshift({ text: userMessage });
 
   try {
     const response = await fetch(
@@ -223,20 +273,13 @@ Generate the complete BananaVault JSON prompt now.`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: parts,
-            },
-          ],
-          systemInstruction: {
-            parts: [{ text: BANANAVAULT_SYSTEM_PROMPT }],
-          },
+          contents: [{ role: "user", parts: parts }],
+          systemInstruction: { parts: [{ text: getSystemPrompt(payload) }] },
           generationConfig: {
             temperature: 0.8,
             topP: 0.95,
             topK: 40,
-            maxOutputTokens: 4096,
+            maxOutputTokens: 8192, // Increased for array generation
             responseMimeType: "application/json",
           },
         }),
@@ -244,9 +287,8 @@ Generate the complete BananaVault JSON prompt now.`;
     );
 
     if (response.status === 429 && retryCount < maxRetries) {
-      // Rate limited — try next key
       console.log(`Rate limited on key index ${currentKeyIndex - 1}, rotating...`);
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImages);
+      return generatePrompt(payload, retryCount + 1);
     }
 
     if (!response.ok) {
@@ -255,9 +297,7 @@ Generate the complete BananaVault JSON prompt now.`;
     }
 
     const data = await response.json();
-
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!text) {
       throw new Error("No content in Gemini response");
@@ -265,15 +305,9 @@ Generate the complete BananaVault JSON prompt now.`;
 
     // Clean potential markdown wrappers
     let cleaned = text.trim();
-    if (cleaned.startsWith("```json")) {
-      cleaned = cleaned.slice(7);
-    }
-    if (cleaned.startsWith("```")) {
-      cleaned = cleaned.slice(3);
-    }
-    if (cleaned.endsWith("```")) {
-      cleaned = cleaned.slice(0, -3);
-    }
+    if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
+    if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
+    if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
     cleaned = cleaned.trim();
 
     // Validate it's proper JSON
@@ -282,7 +316,7 @@ Generate the complete BananaVault JSON prompt now.`;
     return cleaned;
   } catch (error) {
     if (retryCount < maxRetries && error instanceof Error && error.message.includes("429")) {
-      return generatePrompt(description, style, characterName, useCharacter, retryCount + 1, referenceImages);
+      return generatePrompt(payload, retryCount + 1);
     }
     throw error;
   }

@@ -3,42 +3,85 @@
 import React, { useState } from "react";
 
 const STYLE_PRESETS = [
-  { id: "hyper-realism", label: "Hyper-Realism" },
-  { id: "fashion-editorial", label: "Fashion Editorial" },
-  { id: "cinematic-scifi", label: "Cinematic Sci-Fi" },
-  { id: "anime", label: "Anime" },
-  { id: "concept-art", label: "Concept Art" },
-  { id: "street-photography", label: "Street Photo" },
-  { id: "fine-art-bw", label: "Fine Art B&W" },
-  { id: "macro", label: "Nature Macro" },
+  { id: "minimalist", label: "Minimalist" },
+  { id: "luxury", label: "Luxury" },
+  { id: "corporate", label: "Corporate" },
+  { id: "modern", label: "Modern" },
+  { id: "premium", label: "Premium" },
+  { id: "futuristic", label: "Futuristic" },
   { id: "cyberpunk", label: "Cyberpunk" },
-  { id: "selfie-ugc", label: "Selfie UGC" },
+  { id: "vintage", label: "Vintage" },
+  { id: "industrial", label: "Industrial" },
+  { id: "streetwear", label: "Streetwear" },
+  { id: "tech", label: "Tech" },
+  { id: "elegant", label: "Elegant" },
+  { id: "dark-mode", label: "Dark Mode" },
+  { id: "glassmorphism", label: "Glassmorphism" },
+  { id: "3d-render", label: "3D Render" },
+  { id: "photorealistic", label: "Photorealistic" },
+  { id: "cinematic", label: "Cinematic" },
 ];
 
+export type GenerationMode = "standard" | "face_swap" | "mockup";
+
+export interface GeneratePayload {
+  mode: GenerationMode;
+  description: string;
+  styles: string[];
+  characterName: string;
+  useCharacter: boolean;
+  referenceImages?: string[];
+  sourceFaceImage?: string;
+  targetPoseImage?: string;
+  logoImage?: string;
+  mockupReferenceImage?: string;
+  logoDescription?: string;
+  mockupCount?: number;
+}
+
 interface InputFormProps {
-  onGenerate: (data: {
-    description: string;
-    style: string;
-    characterName: string;
-    useCharacter: boolean;
-    referenceImages?: string[];
-  }) => void;
+  onGenerate: (data: GeneratePayload) => void;
   isLoading: boolean;
 }
 
 export function InputForm({ onGenerate, isLoading }: InputFormProps) {
+  const [mode, setMode] = useState<GenerationMode>("standard");
   const [description, setDescription] = useState("");
-  const [selectedStyle, setSelectedStyle] = useState("hyper-realism");
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(["photorealistic"]);
+  
+  // Standard specific
   const [useCharacter, setUseCharacter] = useState(false);
   const [characterName, setCharacterName] = useState("");
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  
+  // Face Swap specific
+  const [sourceFaceImage, setSourceFaceImage] = useState<string | null>(null);
+  const [targetPoseImage, setTargetPoseImage] = useState<string | null>(null);
+  
+  // Mockup specific
+  const [logoImage, setLogoImage] = useState<string | null>(null);
+  const [mockupReferenceImage, setMockupReferenceImage] = useState<string | null>(null);
+  const [logoDescription, setLogoDescription] = useState("");
+  const [mockupCount, setMockupCount] = useState<number>(1);
+
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File handling helpers
+  const handleSingleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    
     const remainingSlots = 2 - referenceImages.length;
     const filesToAdd = files.slice(0, remainingSlots);
 
@@ -52,12 +95,19 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       };
       reader.readAsDataURL(file);
     });
-    
     e.target.value = '';
   };
 
-  const removeImage = (indexToRemove: number) => {
+  const removeReferenceImage = (indexToRemove: number) => {
     setReferenceImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const toggleStyle = (styleId: string) => {
+    setSelectedStyles(prev => 
+      prev.includes(styleId) 
+        ? prev.filter(s => s !== styleId)
+        : [...prev, styleId]
+    );
   };
 
   const handleEnhance = async () => {
@@ -71,177 +121,199 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
         body: JSON.stringify({ description: description.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok)
-        throw new Error(data.error || "Failed to enhance description");
+      if (!res.ok) throw new Error(data.error || "Failed to enhance description");
       setDescription(data.enhanced);
     } catch (err) {
-      console.error(err);
-      setEnhanceError(
-        err instanceof Error ? err.message : "Failed to enhance description.",
-      );
+      setEnhanceError(err instanceof Error ? err.message : "Failed to enhance description.");
     } finally {
       setIsEnhancing(false);
     }
   };
 
+  const isValid = () => {
+    if (mode === "standard") return description.trim().length > 0;
+    if (mode === "face_swap") return sourceFaceImage !== null && targetPoseImage !== null;
+    if (mode === "mockup") return logoImage !== null && (mockupReferenceImage !== null || logoDescription.trim().length > 0);
+    return false;
+  };
+
   const handleSubmit = () => {
-    if (!description.trim()) return;
+    if (!isValid()) return;
     onGenerate({
+      mode,
       description: description.trim(),
-      style: selectedStyle,
+      styles: selectedStyles.length > 0 ? selectedStyles : ["photorealistic"],
       characterName: characterName.trim(),
       useCharacter,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+      sourceFaceImage: sourceFaceImage || undefined,
+      targetPoseImage: targetPoseImage || undefined,
+      logoImage: logoImage || undefined,
+      mockupReferenceImage: mockupReferenceImage || undefined,
+      logoDescription: logoDescription.trim(),
+      mockupCount,
     });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      handleSubmit();
-    }
   };
 
   return (
     <section className="px-6 py-8">
       <div className="max-w-[1200px] mx-auto">
-        {/* Main input area */}
+        
+        {/* Mode Selector */}
+        <div className="flex gap-2 mb-8 p-1 bg-white/5 rounded-lg w-max border border-white/10">
+          {(["standard", "face_swap", "mockup"] as GenerationMode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`px-4 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors ${
+                mode === m ? "bg-white text-black" : "text-white/50 hover:text-white"
+              }`}
+            >
+              {m.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+
+        {/* Inputs based on mode */}
         <div className="relative">
-          {/* Description textarea */}
-          <div className="mb-6">
-            <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">
-              Describe what you want to create
-            </label>
-            <div className="relative">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isEnhancing}
-                placeholder="A portrait of a young woman in a sunlit café in Paris, golden hour light streaming through vintage windows, candid documentary style, natural imperfections, wearing a linen blazer..."
-                rows={5}
-                className="input-multia w-full px-5 py-4 pb-12 text-[15px] leading-relaxed resize-none custom-scrollbar disabled:opacity-50"
-                id="prompt-description"
-              />
-              <button
-                type="button"
-                onClick={handleEnhance}
-                disabled={isEnhancing || !description.trim() || isLoading}
-                className={`absolute bottom-3 right-3 text-[11px] font-body uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors ${
-                  isEnhancing || !description.trim() || isLoading
-                    ? "bg-white/5 text-white/30 cursor-not-allowed"
-                    : "bg-white/10 hover:bg-white/20 text-white/80"
-                }`}
-                title="Automatically expand your idea into a detailed prompt"
-              >
-                {isEnhancing ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="animate-spin w-3 h-3"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        opacity="0.25"
-                      />
-                      <path
-                        d="M12 2a10 10 0 0 1 10 10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    Enhancing...
-                  </span>
-                ) : (
-                  "✨ Magic Enhance"
-                )}
-              </button>
-            </div>
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-[11px] text-white/20 font-body">
-                ⌘+Enter to generate
-              </span>
-              <span className="text-[11px] text-white/20 font-body">
-                {description.length} chars
-              </span>
-            </div>
-            {enhanceError && (
-              <p className="text-xs text-red-400 mt-2 bg-red-500/10 p-2 rounded border border-red-500/20">
-                {enhanceError}
-              </p>
-            )}
-            
-            {/* Reference Image Upload */}
-            <div className="mt-4">
-              <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">
-                Reference Images (Optional, Max 2)
+          
+          {mode === "standard" && (
+            <div className="mb-6">
+              <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">
+                Describe what you want to create
               </label>
-              <div className="flex items-center gap-4">
-                {referenceImages.length < 2 && (
-                  <>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="reference-image-upload"
-                      disabled={isLoading}
-                    />
-                    <label
-                      htmlFor="reference-image-upload"
-                      className={`flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors cursor-pointer border border-white/10 ${
-                        isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5 text-white/70"
-                      }`}
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      Upload Image{referenceImages.length === 1 ? "" : "s"}
-                    </label>
-                  </>
-                )}
-                {referenceImages.length > 0 && (
-                  <div className="flex gap-2">
-                    {referenceImages.map((img, i) => (
-                      <div key={i} className="relative group">
-                        <img src={img} alt={`Reference ${i + 1}`} className="h-10 w-10 object-cover rounded border border-white/20" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(i)}
-                          className="absolute -top-2 -right-2 bg-black text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity border border-white/20"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+              <div className="relative">
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isEnhancing}
+                  placeholder="A portrait of a young woman in a sunlit café..."
+                  rows={4}
+                  className="input-multia w-full px-5 py-4 pb-12 text-[15px] leading-relaxed resize-none custom-scrollbar disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={handleEnhance}
+                  disabled={isEnhancing || !description.trim() || isLoading}
+                  className={`absolute bottom-3 right-3 text-[11px] font-body uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors ${
+                    isEnhancing || !description.trim() || isLoading
+                      ? "bg-white/5 text-white/30 cursor-not-allowed"
+                      : "bg-white/10 hover:bg-white/20 text-white/80"
+                  }`}
+                >
+                  {isEnhancing ? "Enhancing..." : "✨ Magic Enhance"}
+                </button>
+              </div>
+
+              {/* Character consistency toggle */}
+              <div className="mt-6 mb-6">
+                <div className="flex items-center gap-4 mb-3">
+                  <label className="text-xs text-white/30 font-body uppercase tracking-[0.2em]">Character Consistency</label>
+                  <button onClick={() => setUseCharacter(!useCharacter)} className={`relative w-10 h-5 rounded-full ${useCharacter ? "bg-white" : "bg-white/10"}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${useCharacter ? "left-[22px] bg-[#121212]" : "left-0.5 bg-white/40"}`} />
+                  </button>
+                </div>
+                {useCharacter && (
+                  <input type="text" value={characterName} onChange={(e) => setCharacterName(e.target.value)} placeholder="Character name (e.g., ELENA)" className="input-multia w-full max-w-xs px-4 py-2 text-sm" />
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* Style presets */}
-          <div className="mb-6">
-            <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">
-              Style
-            </label>
+              {/* Reference Image Upload */}
+              <div className="mt-4">
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Reference Images (Optional, Max 2)</label>
+                <div className="flex items-center gap-4">
+                  {referenceImages.length < 2 && (
+                    <label className="flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded border border-white/10 cursor-pointer hover:bg-white/5">
+                      <input type="file" accept="image/*" multiple onChange={handleMultipleImageUpload} className="hidden" disabled={isLoading} />
+                      Upload Image
+                    </label>
+                  )}
+                  {referenceImages.length > 0 && (
+                    <div className="flex gap-2">
+                      {referenceImages.map((img, i) => (
+                        <div key={i} className="relative group">
+                          <img src={img} alt="Ref" className="h-10 w-10 object-cover rounded border border-white/20" />
+                          <button onClick={() => removeReferenceImage(i)} className="absolute -top-2 -right-2 bg-black text-white rounded-full opacity-0 group-hover:opacity-100 border border-white/20">❌</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === "face_swap" && (
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Source Face Image (Required)</label>
+                <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                  <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setSourceFaceImage)} className="hidden" disabled={isLoading} />
+                  {sourceFaceImage ? <img src={sourceFaceImage} alt="Source Face" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Face</span>}
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Pose Image (Required)</label>
+                <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                  <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setTargetPoseImage)} className="hidden" disabled={isLoading} />
+                  {targetPoseImage ? <img src={targetPoseImage} alt="Target Pose" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Pose</span>}
+                </label>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Additional Instructions (Optional)</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., Make the lighting more dramatic..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+            </div>
+          )}
+
+          {mode === "mockup" && (
+            <div className="mb-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Logo/Design Image (Required)</label>
+                  <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                    <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setLogoImage)} className="hidden" disabled={isLoading} />
+                    {logoImage ? <img src={logoImage} alt="Logo" className="w-full h-full object-contain p-2" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Logo</span>}
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Mockup Reference (Optional)</label>
+                  <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                    <input type="file" accept="image/*" onChange={(e) => handleSingleImageUpload(e, setMockupReferenceImage)} className="hidden" disabled={isLoading} />
+                    {mockupReferenceImage ? <img src={mockupReferenceImage} alt="Reference" className="w-full h-full object-cover" /> : <span className="text-sm text-white/50 font-body uppercase tracking-wider">Upload Reference</span>}
+                  </label>
+                </div>
+              </div>
+              
+              {!mockupReferenceImage && (
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">What is your logo/design about? (Required if no reference)</label>
+                  <input type="text" value={logoDescription} onChange={(e) => setLogoDescription(e.target.value)} placeholder="e.g., Luxury coffee brand, modern SaaS company..." className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Mockup Count</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map(num => (
+                    <button key={num} onClick={() => setMockupCount(num)} className={`px-4 py-2 rounded text-sm transition-colors ${mockupCount === num ? "bg-white text-black" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Style presets (Multi-select) */}
+          <div className="mb-8">
+            <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Styles (Select Multiple)</label>
             <div className="flex flex-wrap gap-2">
               {STYLE_PRESETS.map((style) => (
                 <button
                   key={style.id}
-                  onClick={() => setSelectedStyle(style.id)}
-                  className={`style-pill ${
-                    selectedStyle === style.id ? "active" : ""
-                  }`}
-                  id={`style-${style.id}`}
+                  onClick={() => toggleStyle(style.id)}
+                  className={`style-pill ${selectedStyles.includes(style.id) ? "active" : ""}`}
                 >
                   {style.label}
                 </button>
@@ -249,87 +321,15 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             </div>
           </div>
 
-          {/* Character consistency toggle */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-3">
-              <label className="text-xs text-white/30 font-body uppercase tracking-[0.2em]">
-                Character Consistency
-              </label>
-              <button
-                onClick={() => setUseCharacter(!useCharacter)}
-                className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
-                  useCharacter ? "bg-white" : "bg-white/10"
-                }`}
-                id="character-toggle"
-                aria-label="Toggle character consistency"
-              >
-                <span
-                  className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${
-                    useCharacter
-                      ? "left-[22px] bg-[#121212]"
-                      : "left-0.5 bg-white/40"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {useCharacter && (
-              <div className="overflow-hidden transition-all duration-300">
-                <input
-                  type="text"
-                  value={characterName}
-                  onChange={(e) => setCharacterName(e.target.value)}
-                  placeholder="Character name (e.g., ELENA)"
-                  className="input-multia w-full max-w-xs px-4 py-2.5 text-sm"
-                  id="character-name"
-                />
-                <p className="text-[11px] text-white/20 font-body mt-2">
-                  The generated prompt will include identity anchoring for
-                  consistent character features across multiple generations.
-                </p>
-              </div>
-            )}
-          </div>
-
           {/* Generate button */}
           <button
             onClick={handleSubmit}
-            disabled={!description.trim() || isLoading}
-            className={`btn-multia w-full sm:w-auto ${
-              !description.trim() || isLoading
-                ? "opacity-30 cursor-not-allowed"
-                : ""
-            }`}
-            id="generate-button"
+            disabled={!isValid() || isLoading}
+            className={`btn-multia w-full sm:w-auto ${!isValid() || isLoading ? "opacity-30 cursor-not-allowed" : ""}`}
           >
-            {isLoading ? (
-              <span className="flex items-center gap-3">
-                <svg
-                  className="animate-spin w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    opacity="0.25"
-                  />
-                  <path
-                    d="M12 2a10 10 0 0 1 10 10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                Generating...
-              </span>
-            ) : (
-              "Generate Prompt"
-            )}
+            {isLoading ? "Generating..." : "Generate Prompt"}
           </button>
+
         </div>
       </div>
     </section>
