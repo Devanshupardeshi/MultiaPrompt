@@ -404,7 +404,8 @@ function buildUserParts(payload: GeneratePayload): any[] {
 // ---------------------------------------------------------------------------
 
 async function callGemini(body: Record<string, unknown>, retryCount = 0): Promise<string> {
-  const maxRetries = 5;
+  const keysCount = getApiKeys().length;
+  const maxRetries = keysCount > 0 ? keysCount - 1 : 0;
   const apiKey = getNextKey();
 
   const response = await fetch(GEMINI_URL(apiKey), {
@@ -421,6 +422,9 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0): Promis
 
   if (!response.ok) {
     const errorBody = await response.text();
+    if (response.status === 429) {
+      throw new Error("All Gemini API keys have exhausted their rate limits. Please try again later.");
+    }
     throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
   }
 
@@ -428,7 +432,7 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0): Promis
   const candidate = data?.candidates?.[0];
 
   if (candidate?.finishReason === "MAX_TOKENS") {
-    throw new Error("Gemini response was truncated (finishReason: MAX_TOKENS). Increase maxOutputTokens.");
+    throw new Error("Gemini response was truncated (finishReason: MAX_TOKENS).");
   }
 
   const text = (candidate?.content?.parts ?? [])
