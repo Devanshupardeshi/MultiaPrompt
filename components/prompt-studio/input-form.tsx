@@ -52,6 +52,7 @@ export interface GeneratePayload {
   animationIntensity?: number;
   animationNames?: string;
   additionalDetails?: string;
+  designMdContent?: string;
 }
 
 export interface CustomStyle {
@@ -169,6 +170,74 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [animationIntensity, setAnimationIntensity] = useState(80);
   const [animationNames, setAnimationNames] = useState("");
   const [additionalDetails, setAdditionalDetails] = useState("");
+  const [designMdContent, setDesignMdContent] = useState("");
+  const [designMdFileName, setDesignMdFileName] = useState("");
+
+  // Parse DESIGN.md YAML frontmatter and auto-fill form fields
+  const handleDesignMdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDesignMdFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const text = reader.result as string;
+      setDesignMdContent(text);
+
+      // Extract YAML frontmatter between --- markers
+      const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
+      if (!fmMatch) return;
+      const yaml = fmMatch[1];
+
+      // Helper: extract a top-level YAML value
+      const getVal = (key: string): string => {
+        const m = yaml.match(new RegExp(`^${key}:\\s*["']?([^"'\\n]+)["']?`, "m"));
+        return m ? m[1].trim() : "";
+      };
+
+      // Helper: extract a nested color value like `  primary: "#ffffff"`
+      const getColor = (key: string): string => {
+        const m = yaml.match(new RegExp(`^\\s+${key}:\\s*["']?(#[0-9a-fA-F]{3,8})["']?`, "m"));
+        return m ? m[1] : "";
+      };
+
+      // Helper: extract font family from typography section
+      const getFont = (section: string): string => {
+        // Find the section, then the fontFamily under it
+        const sectionRegex = new RegExp(`${section}:[\\s\\S]*?fontFamily:\\s*["']?([^"'\\n]+)["']?`);
+        const m = yaml.match(sectionRegex);
+        return m ? m[1].split(",")[0].trim().replace(/["']/g, "") : "";
+      };
+
+      // Auto-fill brand name from `name:` field
+      const name = getVal("name");
+      if (name) {
+        // Extract brand name from the design analysis name (e.g., "BMW M-design-analysis" -> "BMW M")
+        const cleanName = name.replace(/-design-analysis$/i, "").replace(/-/g, " ").trim();
+        if (cleanName) setBrandName(cleanName);
+      }
+
+      // Auto-fill description
+      const desc = getVal("description");
+      if (desc) setAdditionalDetails(desc);
+
+      // Auto-fill colors
+      const primary = getColor("primary");
+      const canvas = getColor("canvas");
+      // Look for accent-like colors (m-red, electric-blue, etc.)
+      const accent = getColor("m-red") || getColor("electric-blue") || getColor("accent");
+
+      if (primary) setPrimaryColor(primary);
+      if (accent) setAccentColor(accent);
+      if (canvas) setBgColor(canvas);
+
+      // Auto-fill fonts
+      const displayFont = getFont("display-xl") || getFont("display-lg");
+      const bodyFontVal = getFont("body-md") || getFont("body-sm");
+      if (displayFont) setHeadingFont(displayFont);
+      if (bodyFontVal) setBodyFont(bodyFontVal);
+    };
+    reader.readAsText(file);
+  };
 
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
@@ -305,6 +374,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       animationIntensity: animationIntensity,
       animationNames: animationNames.trim() || undefined,
       additionalDetails: additionalDetails.trim() || undefined,
+      designMdContent: designMdContent.trim() || undefined,
     });
   };
 
@@ -515,6 +585,29 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
 
           {mode === "3d_website" && (
             <div className="mb-6 space-y-6">
+              {/* DESIGN.md Upload */}
+              <div className="p-4 border border-dashed border-white/15 rounded-lg bg-white/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs text-white/40 font-body uppercase tracking-[0.2em] mb-1">Import DESIGN.md</label>
+                    <p className="text-[11px] text-white/20 font-body">Upload a design system file to auto-fill colors, fonts, and brand details</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {designMdFileName && (
+                      <span className="text-[11px] text-green-400/70 font-mono flex items-center gap-1.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                        {designMdFileName}
+                      </span>
+                    )}
+                    <label className="cursor-pointer text-[11px] text-white/40 hover:text-white/80 transition-colors font-body uppercase tracking-wider px-3 py-2 rounded border border-white/10 hover:border-white/30 bg-white/5 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                      {designMdFileName ? "Replace" : "Upload .md"}
+                      <input type="file" accept=".md,.markdown" onChange={handleDesignMdUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Row 1: Brand Name + Tagline */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

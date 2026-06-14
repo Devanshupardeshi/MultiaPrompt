@@ -641,6 +641,20 @@ function buildUserParts(payload: GeneratePayload): any[] {
       payload.referenceImages.forEach((img, i) => pushImage(`IMAGE ${i + 1}: WEBSITE STYLE REFERENCE`, img));
     }
 
+    // DESIGN.md — full design system document
+    if (payload.designMdContent) {
+      userMessage += `\n--- IMPORTED DESIGN SYSTEM (DESIGN.md) ---\n`;
+      userMessage += `The user has uploaded a complete design system document. This is the MOST IMPORTANT context. Use it as the authoritative source for:\n`;
+      userMessage += `- ALL color tokens and their exact hex values\n`;
+      userMessage += `- ALL typography tokens, font families, weights, sizes, and line heights\n`;
+      userMessage += `- ALL component specifications (buttons, cards, nav, footer, etc.)\n`;
+      userMessage += `- Spacing system and border radius rules\n`;
+      userMessage += `- Design philosophy, do's and don'ts\n`;
+      userMessage += `- Responsive breakpoints\n\n`;
+      userMessage += `<design_system>\n${payload.designMdContent}\n</design_system>\n\n`;
+      userMessage += `IMPORTANT: The design system above overrides any form inputs where they conflict. Use EXACT token values from the design system.\n`;
+    }
+
     userMessage += `\nGenerate the complete 5-Layer Creative Brief now. Make it MASSIVE, DETAILED, and PREMIUM.`;
   }
 
