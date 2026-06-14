@@ -393,66 +393,287 @@ Section-specific layout rules:
 - CTA: Full-width video background, large serif headline
 - FOOTER: background #050505, 5-column grid (1.4fr 1fr 1fr 1fr 1.4fr), gold gradient top-rule, social icon circles
 
-### LAYER 05 — MOTION (Complete Animation Architecture)
-ALL animations MUST use ONLY:
-- **GSAP (GreenSock)** with **ScrollTrigger** for scroll-driven animations
-- **Framer Motion** for component-level entrance animations and interactions
-- **Lenis** for smooth inertia scrolling (optional but recommended)
+### LAYER 05 — MOTION (Cinematic Scroll-Driven Storytelling Engine)
 
-Provide a COMPLETE ANIMATION SPECIFICATIONS TABLE:
+**THIS IS THE MOST IMPORTANT LAYER.** The website must feel like a cinematic experience — NOT a static page with fade-ins. Every scroll pixel must trigger something visual. The user is scrolling through a STORY, not reading a brochure.
+
+ALL animations MUST use:
+- **GSAP (GreenSock) v3.14+** with **ScrollTrigger** (scrub, pin, snap, batch)
+- **Framer Motion** (useScroll, useTransform, useSpring, AnimatePresence, motion.div)
+- **Lenis** for smooth inertia scrolling (lerp: 0.08, smooth: true)
+- **SplitType / GSAP SplitText** for character-level text animations
+
+## MANDATORY ADVANCED EFFECTS (Must include ALL of these):
+
+### A. SCROLL-DRIVEN 3D TRANSFORMS (GSAP ScrollTrigger + scrub)
+Products/images MUST rotate and transform AS the user scrolls — NOT just fade in:
+\`\`\`
+gsap.to('.product-image', {
+  rotateY: 25,
+  rotateX: -10,
+  scale: 1.15,
+  z: 100,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.product-section',
+    start: 'top bottom',
+    end: 'bottom top',
+    scrub: 1.5
+  }
+});
+\`\`\`
+Specify perspective: 1200px on the parent container for all 3D effects.
+
+### B. PINNED SECTIONS WITH CONTENT SWAPS (ScrollTrigger pin)
+At least ONE section must PIN in place while content animates through it:
+\`\`\`
+ScrollTrigger.create({
+  trigger: '.showcase-section',
+  start: 'top top',
+  end: '+=300%',
+  pin: true,
+  scrub: 1,
+  // Inside: images cross-fade, text swaps, progress bar fills
+});
+\`\`\`
+While pinned: background images cross-fade, text headlines swap with blur transitions, a progress indicator fills across the bottom.
+
+### C. HORIZONTAL SCROLL SECTION (GSAP + ScrollTrigger)
+At least ONE section must scroll HORIZONTALLY while the user scrolls vertically:
+\`\`\`
+gsap.to('.horizontal-panels', {
+  xPercent: -100 * (panels.length - 1),
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.horizontal-container',
+    pin: true,
+    scrub: 1,
+    snap: 1 / (panels.length - 1),
+    end: '+=3000'
+  }
+});
+\`\`\`
+
+### D. PARALLAX DEPTH SYSTEM (Multi-layer, different scroll speeds)
+Every section with a background must have AT LEAST 3 parallax layers moving at different speeds:
+- Layer 1 (background image): moves at 0.15x scroll speed (slowest)
+- Layer 2 (midground element / product): moves at 0.4x scroll speed
+- Layer 3 (foreground text / UI): moves at 0.7x scroll speed
+This creates a cinematic depth-of-field effect through pure scroll mechanics.
+
+### E. CHARACTER-BY-CHARACTER TEXT REVEAL (SplitType + GSAP)
+ALL major headlines must animate character by character — NOT word by word, NOT as a block:
+\`\`\`
+const split = new SplitType('.hero-title', { types: 'chars' });
+gsap.from(split.chars, {
+  y: 100,
+  rotateX: -90,
+  opacity: 0,
+  filter: 'blur(10px)',
+  stagger: 0.03,
+  duration: 0.8,
+  ease: 'back.out(1.7)',
+  scrollTrigger: { trigger: '.hero-title', start: 'top 80%' }
+});
+\`\`\`
+Characters should enter with rotation on X axis (3D flip) + blur + y-offset.
+
+### F. SCROLL-VELOCITY EFFECTS (Framer Motion useVelocity)
+Elements should react to scroll SPEED, not just position:
+- Fast scroll: images tilt/skew slightly in scroll direction
+- Slow scroll: images return to neutral
+- This creates a "physics-alive" feeling
+\`\`\`
+const { scrollY } = useScroll();
+const scrollVelocity = useVelocity(scrollY);
+const skewY = useTransform(scrollVelocity, [-1000, 0, 1000], [-3, 0, 3]);
+const scaleX = useTransform(scrollVelocity, [-1000, 0, 1000], [0.98, 1, 0.98]);
+\`\`\`
+
+### G. IMAGE SEQUENCE / CANVAS SCRUBBING (Frame-by-frame scroll animation)
+If the brand has product imagery, include a scroll-driven canvas animation where the product rotates/transforms frame by frame as the user scrolls:
+- Section height: 400vh (for enough scroll range)
+- Inner container: position: sticky, top: 0, height: 100vh
+- Canvas: draws sequential frames tied to scroll position
+- 60-150 frames, named sequentially (frame_001.webp to frame_150.webp)
+\`\`\`
+const frameCount = 150;
+const tween = gsap.to({ frame: 0 }, {
+  frame: frameCount - 1,
+  snap: 'frame',
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.canvas-section',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 0.5
+  },
+  onUpdate: function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(images[Math.round(this.targets()[0].frame)], 0, 0);
+  }
+});
+\`\`\`
+
+### H. REVEAL MASKS / CLIP-PATH ANIMATIONS
+Sections or images should reveal through animated clip-paths:
+\`\`\`
+gsap.from('.reveal-element', {
+  clipPath: 'inset(100% 0% 0% 0%)',
+  duration: 1.2,
+  ease: 'power4.inOut',
+  scrollTrigger: { trigger: '.reveal-element', start: 'top 75%' }
+});
+\`\`\`
+Or circular reveals: clipPath: 'circle(0% at 50% 50%)' → 'circle(100% at 50% 50%)'
+
+### I. MAGNETIC CURSOR / HOVER DISTORTION
+Interactive elements should have magnetic pull effect on hover:
+- Button follows cursor within a 40px radius
+- Product images tilt toward cursor position (rotateX/rotateY based on mouse position)
+- Specify the math: rotateX = (mouseY - centerY) / height * 15deg
+
+### J. PROGRESS-DRIVEN STORYTELLING
+Include a scroll progress indicator that:
+- Shows overall page progress as a thin line at the top
+- OR shows section-specific progress during pinned sections
+- Uses GSAP ScrollTrigger onUpdate callback with progress value
+
+### K. STAGGERED GRID REVEALS WITH GSAP.utils.toArray + ScrollTrigger.batch
+Card grids must NOT fade in as a block. Use batch for performance:
+\`\`\`
+ScrollTrigger.batch('.card', {
+  onEnter: (elements) => gsap.from(elements, {
+    y: 100,
+    opacity: 0,
+    rotateX: -15,
+    stagger: 0.1,
+    duration: 0.8,
+    ease: 'power3.out'
+  }),
+  start: 'top 85%'
+});
+\`\`\`
+
+## COMPLETE ANIMATION SPECIFICATIONS TABLE
+Provide a table with AT LEAST 15 rows covering every animated element:
 | Element | Trigger | Start | End | Effect | Ease | Scrub |
-|---|---|---|---|---|---|---|
-| .bg-video (entrance) | DOMContentLoaded | — | — | scale 1.2→1.05, opacity 0→1 | power2.out | No |
-| .bg-video (scroll) | .hero | top top | bottom top | scale 1.05→1 | — | Yes |
-| .hero-details | .hero | top top | bottom top | y: 0→-150 | — | Yes |
-| .hero-text-bg | .hero | top top | bottom top | y: 0→-250 | — | 1.2 |
-| .nav (entrance) | DOMContentLoaded | — | — | y: -100→0, opacity 0→1 | power4.out | No |
 
-Include these NAMED animation patterns with EXACT timing:
-1. wordByWordBlur: Each word from blur(10px), y:50, opacity:0 → clear. 100ms stagger. IntersectionObserver-triggered.
-2. delayedBlurFade: Full element blur fade. Delay 0.8s. Duration 0.6s. ease: power2.out.
-3. ctaLastEntrance: Blur-fade sequence. Delay 1.1s. Sequence: headline → subtext → CTA button. Stagger 0.3s.
-4. videoFadedEdges: 200px gradient overlays on top + bottom edges of video elements.
-5. parallaxScroll: Scroll-driven y-offset using GSAP scrub: true. Background moves at 0.3x scroll speed.
-6. staggeredCardReveal: Cards enter from y:80, opacity:0 with 150ms stagger. toggleActions: 'play none none reverse'.
-7. stickyHeroScrollOver: Hero section position: sticky, subsequent sections scroll over it creating depth.
-8. navAutoHide: Nav hides on scroll-down (translateY: -100%), reveals on scroll-up, with 0.3s transition.
+Include entries for:
+- Hero video entrance + scroll parallax
+- Hero title char-by-char reveal
+- Hero watermark parallax (faster than content)
+- Nav entrance + auto-hide
+- Each content section entrance
+- Product image 3D rotation on scroll
+- Pinned section content swaps
+- Horizontal scroll panel
+- Card grid batch reveals
+- CTA section parallax
+- Footer slide-up reveal
+- Canvas frame scrubbing (if applicable)
+- Clip-path reveals
+- Velocity-based skew effects
 
-For canvas frame animation (if applicable): describe frame count, image naming convention, scroll range, GSAP tween from {frame: 0} to {frame: N}, snapped to integers, ease: 'none', scrubbed.
-
-Animation intensity mapping:
-- 0-30%: Minimal — simple opacity fades (0.6s), no parallax, no blur effects
-- 31-70%: Moderate — blur fades, gentle parallax (y: -80), entrance animations with toggleActions
-- 71-100%: Cinematic — word-by-word blur reveals, heavy parallax (y: -250), scroll-driven canvas frame sequences, scrubbed rotations, scale transforms
+## ANIMATION INTENSITY MAPPING
+- 0-30%: Simple opacity fades + gentle y-offset (y: 30). No 3D, no parallax, no pinning.
+- 31-70%: Blur-fade entrances + 2-layer parallax + word-by-word text reveals + basic ScrollTrigger toggleActions.
+- 71-100%: FULL CINEMATIC — char-by-char 3D text reveals, 3-layer parallax depth, pinned sections with content swaps, horizontal scroll, canvas frame scrubbing, clip-path reveals, magnetic cursor, velocity-based distortion, scroll-driven 3D transforms. THIS IS AN AWWWARDS-LEVEL SUBMISSION.
 
 ### FULL_PROMPT (THE FINAL DELIVERABLE)
-- Merge ALL 5 layers into ONE MASSIVE, cohesive document — 5,000+ words minimum
+- Merge ALL 5 layers into ONE MASSIVE, cohesive document — 8,000+ words minimum
 - This is the final copy-paste-ready creative brief for Stitch
-- Structure: Fonts → Color → Glass → Layout (section by section with HTML trees) → Motion (with animation table)
+- Structure: Fonts → Color → Glass → Layout (section by section with full HTML trees) → Motion (with COMPLETE animation table of 15+ rows and ALL code snippets)
 - Include ALL CSS code blocks inline
-- Include ALL GSAP specifications with start/end/scrub values
-- Include ALL HTML element trees with class names
+- Include ALL GSAP code snippets with exact start/end/scrub/pin values
+- Include ALL Framer Motion hook patterns (useScroll, useTransform, useSpring)
+- Include ALL HTML element trees with class names and inline style descriptions
 - Include the gradient overlay formulas for each section
 - Include z-index stacking order
 - Include responsive breakpoint notes
-- Write it as a COMPLETE build specification that a developer could hand off to production
+- Write it as a COMPLETE build specification — a developer should be able to build the entire site from this document alone
 - Do NOT use placeholders — use the actual brand name, tagline, and colors provided
+- The motion specifications should be SO detailed that copying them into a GSAP project produces working animations
 
-## DESIGN PHILOSOPHY (Enforce These):
-1. Dark-first: Every section on near-black. White text. No light backgrounds ever.
-2. Full-bleed immersion: Every section is 100vh minimum. No visible padding between sections. Images object-fit: cover.
-3. Cinematic overlays: Gradient overlays on ALL background images for text readability without reducing drama.
-4. Typography hierarchy: Three fonts with distinct roles.
-5. Motion is king: Every element enters with intentional GSAP animation. No element simply appears.
-6. Sticky hero → scroll-over: Hero pins behind content, creating depth.
-7. Glass borders catch light: linear-gradient borders, NOT solid white lines.
+## DESIGN PHILOSOPHY (Non-Negotiable):
+1. **THIS IS A STORYTELLING WEBSITE, NOT A BROCHURE.** The user scrolls through a cinematic narrative. Each section = a chapter. The scroll wheel = the play button. If the page could be a static PDF, you have FAILED.
+2. **3D models are ALIVE.** Products/objects must move, rotate, orbit, explode, and reassemble as the user scrolls. They are the main characters of the story. Use Three.js / React Three Fiber / Spline for 3D scenes.
+3. **Scroll drives EVERYTHING.** Every scroll pixel changes something on screen — camera angle shifts, models rotate, text reveals, backgrounds crossfade, layers shift at different speeds.
+4. **Dark-first**: Every section on near-black. White text. No light backgrounds ever.
+5. **Full-bleed immersion**: Every section is 100vh minimum. Images object-fit: cover. No visible gaps.
+6. **Character-level text animation**: Headlines never appear as a block. Characters flip, blur, and stagger in one by one.
+7. **At least ONE pinned section with 300%+ scroll range**: Content animates within while the viewport stays fixed.
+8. **At least ONE horizontal scroll showcase**: Break the vertical flow with a lateral gallery.
+9. **Physics-aware motion**: Elements respond to scroll velocity — fast scrolling skews/tilts elements, slow scrolling settles them.
+10. **Cinematic camera movement**: As the user scrolls, the virtual "camera" orbits around the 3D model, revealing different angles. Think Apple AirPods Pro page.
+
+## 3D MODEL INTEGRATION (Three.js / React Three Fiber / Spline):
+The website MUST include 3D model specifications for at least ONE section. Describe these in detail:
+
+### 3D Scene Architecture:
+\`\`\`
+<Canvas camera={{ position: [0, 0, 5], fov: 45 }} style={{ position: 'sticky', top: 0, height: '100vh' }}>
+  <ambientLight intensity={0.4} />
+  <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
+  <spotLight position={[-3, 8, 3]} angle={0.3} penumbra={0.8} intensity={0.8} color="#accent" />
+  <Environment preset="studio" blur={0.5} />
+  <ContactShadows position={[0, -1.5, 0]} opacity={0.4} scale={10} blur={2} />
+  <ProductModel scrollProgress={scrollYProgress} />
+  <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+</Canvas>
+\`\`\`
+
+### Scroll-Driven 3D Camera Choreography:
+Describe a camera orbit path tied to scroll progress (0% to 100%):
+- **0-15% scroll**: Camera at [0, 0, 5] — front view, model gently auto-rotating
+- **15-30% scroll**: Camera orbits to [3, 1, 4] — 3/4 angle, model stops auto-rotate
+- **30-50% scroll**: Camera zooms to [1, 0, 2.5] — close-up of hero feature, spotlight intensifies
+- **50-65% scroll**: Camera rises to [0, 3, 4] — top-down perspective, model parts start separating (exploded view)
+- **65-80% scroll**: Camera at [-3, 1, 4] — opposite side angle, parts reassemble with spring physics
+- **80-100% scroll**: Camera pulls back to [0, 0, 6] — wide reveal with all features highlighted, environment lights up
+
+### Model Interaction Patterns:
+- **Scroll-driven rotation**: Model rotates on Y-axis proportional to scroll (360° over the full section)
+- **Exploded view on scroll**: Model parts separate along their normals when scroll reaches 50-65% of section
+- **Material transitions**: Model material shifts from matte to glossy/metallic as scroll progresses
+- **Floating annotations**: Text labels float in 3D space near model features, fading in/out at specific scroll ranges
+- **Environment lighting shifts**: Background HDRI/environment changes from dark studio to bright showroom as scroll moves
+
+### Spline Alternative (if no 3D model file):
+\`\`\`
+<Spline
+  scene="https://prod.spline.design/[scene-id]/scene.splinecode"
+  style={{ width: '100%', height: '100vh', position: 'sticky', top: 0 }}
+  onLoad={(spline) => {
+    // Bind scroll to spline object rotation
+    window.addEventListener('scroll', () => {
+      const progress = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+      spline.setVariable('scrollProgress', progress);
+    });
+  }}
+/>
+\`\`\`
+
+## NARRATIVE STORY ARC:
+Structure the website as a STORY with these beats:
+
+1. **THE HOOK (Hero)** — Full-screen cinematic reveal. 3D model enters from darkness. Title characters flip in one by one. The user is compelled to scroll.
+2. **THE WORLD (Context)** — As user scrolls, the camera orbits the model. Background shifts. Floating text annotations introduce the product/brand philosophy. Parallax layers create depth.
+3. **THE DEEP DIVE (Features)** — Pinned section. Model explodes into components. Each component highlights as text swaps. Progress bar shows journey through features.
+4. **THE SHOWCASE (Gallery)** — Horizontal scroll panel. Multiple angles/variants/use-cases slide laterally. Each panel has its own parallax micro-world.
+5. **THE PROOF (Social/Stats)** — Numbers count up on scroll (GSAP countTo). Testimonial cards enter with clip-path reveals. Glass-card treatment.
+6. **THE CALL (CTA)** — Full-screen cinematic video. Model reassembles in full glory. Strong CTA with magnetic button effect.
+7. **THE CLOSE (Footer)** — Minimal, elegant. Brand signature. Model shrinks to thumbnail in corner.
 
 ## ADDITIONAL RULES:
 - The user's additional details box may contain random context. Intelligently extract and place each piece into the appropriate layer.
 - NEVER use generic placeholder text. Use the actual brand name and tagline.
-- If the user provided custom animation names, define those with appropriate GSAP/Framer Motion timing.
-- This brief is for UI/UX DESIGN screens — not a full coded website. But the specifications must be precise enough that they COULD be coded directly.
+- If the user provided custom animation names, define those with GSAP/Framer Motion/Three.js code snippets.
+- This brief is for UI/UX DESIGN screens — but the specifications must be precise enough to code directly with Three.js + GSAP.
+- Think of yourself as the creative director of an Awwwards Site of the Year + FWA submission. You are designing a $50,000 premium agency website. Generic fade-ins and simple grids are UNACCEPTABLE.
+- Every section must have at least ONE "wow moment" that would make a designer screenshot it.
 `;
+
   }
 
   let prompt = `You are the BananaVault Prompt Engine — a professional JSON prompt generator for AI image generation. The JSON you produce will be consumed by ${targetModel === "gpt-image" ? "OpenAI GPT Image" : "Google Nano Banana Pro"}.
