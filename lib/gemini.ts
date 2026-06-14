@@ -295,7 +295,8 @@ User idea: "a barista making latte art"
 ## Mode: FACE SWAP
 - IMAGE 1 is the SOURCE FACE (identity to preserve). IMAGE 2 is the TARGET POSE (composition to preserve).
 - The downstream image model will receive the SAME two images. Therefore the "prompt" must primarily INSTRUCT it, e.g.: "Use the exact face and identity of the person in image 1. Apply it seamlessly to the pose, body position, camera angle, lighting, and composition of image 2."
-- Add textual identity anchors (facial geometry, distinguishing marks) only as secondary reinforcement — text alone cannot reconstruct a face.
+- EXTRACT AND PRESERVE BODY FEATURES & ACCESSORIES: Carefully analyze IMAGE 1. If the person has visible tattoos, body hair, jewelry (watches, rings, necklaces), glasses, or signature clothing/accessories, you MUST explicitly describe them in the "prompt" and "subject" fields so they are carried over to the final image.
+- Add textual identity anchors (facial geometry, distinguishing marks) only as secondary reinforcement.
 - NEVER alter age, gender, facial structure, skin tone, hairstyle, or identity unless the user explicitly requests it. Identity fidelity outranks artistic interpretation.
 `;
   } else if (payload.mode === "mockup") {
