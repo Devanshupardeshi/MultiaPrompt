@@ -727,6 +727,23 @@ function validateGeneratedJson(rawText: string, payload: GeneratePayload): Valid
     return { ok: false, error: "Output must be a single JSON object" };
   }
 
+  // 3D Website mode has a completely different schema
+  if (payload.mode === "3d_website") {
+    const requiredLayers = [
+      "layer_1_fonts",
+      "layer_2_color",
+      "layer_3_glass",
+      "layer_4_layout",
+      "layer_5_motion",
+      "full_prompt",
+    ];
+    const missing = requiredLayers.filter((k) => !parsed[k] || (typeof parsed[k] === "string" && parsed[k].trim().length === 0));
+    if (missing.length > 0) {
+      return { ok: false, error: `Missing required 3D Website layers: ${missing.join(", ")}` };
+    }
+    return { ok: true, value: JSON.stringify(parsed, null, 2) };
+  }
+
   const requiredTop = [
     "prompt",
     "negative_prompt",
