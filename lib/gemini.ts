@@ -30,7 +30,7 @@ function getNextKey(): string {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const GEMINI_URL = (key: string, model = "gemini-2.5-flash") =>
+const GEMINI_URL = (key: string, model = "gemini-3.5-flash") =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
 const GPT_IMAGE_RESOLUTIONS = ["1024x1024", "1536x1024", "1024x1536"];
@@ -903,7 +903,7 @@ function buildUserParts(payload: GeneratePayload): any[] {
 // Gemini call with 429 key rotation + exponential backoff + truncation check.
 // ---------------------------------------------------------------------------
 
-async function callGemini(body: Record<string, unknown>, retryCount = 0, model = "gemini-2.5-flash"): Promise<string> {
+async function callGemini(body: Record<string, unknown>, retryCount = 0, model = "gemini-3.5-flash"): Promise<string> {
   const keysCount = getApiKeys().length;
   const maxRetries = keysCount > 0 ? keysCount - 1 : 0;
   const apiKey = getNextKey();
@@ -1061,8 +1061,8 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
   const systemPrompt = getSystemPrompt(payload);
   const responseSchema = buildResponseSchema(payload);
 
-  // Use gemini-3.5-flash for 3D Website mode (bigger output), gemini-2.5-flash for image modes
-  const model = payload.mode === "3d_website" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+  // Use gemini-3.5-flash for all modes
+  const model = "gemini-3.5-flash";
 
   const makeBody = (extraParts: Array<{ text: string }> = []) => ({
     contents: [{ role: "user", parts: [...parts, ...extraParts] }],
