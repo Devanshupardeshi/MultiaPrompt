@@ -30,8 +30,8 @@ function getNextKey(): string {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const GEMINI_URL = (key: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+const GEMINI_URL = (key: string, model = "gemini-2.5-flash") =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
 const GPT_IMAGE_RESOLUTIONS = ["1024x1024", "1536x1024", "1024x1536"];
 const GPT_IMAGE_ASPECT_RATIOS = ["1:1", "3:2", "2:3"];
@@ -47,6 +47,40 @@ function resolveTargetModel(payload: GeneratePayload): TargetModel {
 // ---------------------------------------------------------------------------
 
 function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> {
+  // 3D Website mode uses a completely different schema — 5-layer creative brief
+  if (payload.mode === "3d_website") {
+    return {
+      type: "OBJECT",
+      properties: {
+        layer_1_fonts: {
+          type: "STRING",
+          description: "LAYER 01 — FONTS: Complete font specification. Include Google Fonts URL with exact weights, CSS @import or <link> tag, CSS custom properties for font-family, font pairing rationale, typography hierarchy (heading sizes with clamp(), body sizes, letter-spacing, line-height). Must be copy-paste ready CSS.",
+        },
+        layer_2_color: {
+          type: "STRING",
+          description: "LAYER 02 — COLOR: Complete color system. CSS custom properties in HSL. Full opacity hierarchy (100% headings, 70% subheads, 60% body, 20% borders). Background, text, primary, accent colors with exact values. Dark-first design system. Must be copy-paste ready CSS custom properties.",
+        },
+        layer_3_glass: {
+          type: "STRING",
+          description: "LAYER 03 — GLASS EFFECTS: Complete CSS for Subtle Glass (cards, navbar: backdrop-filter blur(4px), gradient borders) and Strong Glass (CTA, prominent UI: backdrop-filter blur(50px), box-shadow). Include exact border-radius, border gradients, and background rgba values. Must be copy-paste ready CSS.",
+        },
+        layer_4_layout: {
+          type: "STRING",
+          description: "LAYER 04 — LAYOUT: Section-by-section blueprint. For each section describe: HTML structure, element hierarchy, positioning, responsive behavior, z-index stacking. Include navbar, hero (with user's media), features, stats, testimonials, CTA, footer — element by element. This is the architecture floor plan.",
+        },
+        layer_5_motion: {
+          type: "STRING",
+          description: "LAYER 05 — MOTION: Named animation patterns using STRICTLY Framer Motion and GSAP + ScrollTrigger. Include exact timing (duration, delay, stagger), easing curves, scroll-driven parallax specs, IntersectionObserver triggers. Choreography sequence for each section entrance. Word-by-word blur, delayed fade, staggered entrance patterns.",
+        },
+        full_prompt: {
+          type: "STRING",
+          description: "The complete, merged 5-layer prompt as ONE massive block of text. This is the final copy-paste-ready creative brief that combines all 5 layers into a single cohesive document, ready to paste into Stitch for UI/UX generation.",
+        },
+      },
+      required: ["layer_1_fonts", "layer_2_color", "layer_3_glass", "layer_4_layout", "layer_5_motion", "full_prompt"],
+    };
+  }
+
   const targetModel = resolveTargetModel(payload);
 
   const outputSchema: Record<string, any> = {
@@ -246,6 +280,181 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
 function getSystemPrompt(payload: GeneratePayload): string {
   const targetModel = resolveTargetModel(payload);
 
+  // 3D Website mode — completely different system prompt
+  if (payload.mode === "3d_website") {
+    return `You are the Multia Website Prompt Engine — a world-class creative director and senior frontend architect who produces MASSIVE, production-grade, 5-Layer Creative Briefs for premium website UI/UX generation.
+
+Your output is consumed by a UI/UX design AI (Stitch). The brief you produce MUST be so exhaustively detailed that the AI generates a jaw-dropping, cinematic, premium single-page website design. You are generating the COMPLETE creative + technical blueprint — NOT a summary, NOT an outline.
+
+## CRITICAL: OUTPUT LENGTH
+Each layer MUST be extremely long and detailed. The full_prompt field alone should be 5,000+ words minimum. Think of it as a complete technical specification document — like a senior developer writing the entire build spec. Do NOT summarize. Do NOT abbreviate. Write EVERYTHING out fully.
+
+## THE 5-LAYER PROMPT FRAMEWORK (DesignXStream Method)
+
+### LAYER 01 — FONTS (Complete Typography System)
+- Name EXACT Google Fonts with EXACT weights (e.g., "Playfair Display 400, 700, italic" + "Inter 300, 400, 500, 600" + "Outfit 300, 400, 600")
+- Include the FULL Google Fonts \`<link>\` tag with all weights and styles
+- Define CSS custom properties:
+  \`\`\`css
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-accent: 'Outfit', sans-serif;
+  \`\`\`
+- Specify COMPLETE typography hierarchy with clamp() for responsive sizing:
+  - h1: font-size, font-weight, letter-spacing, line-height, text-transform
+  - h2: same detail
+  - h3/h4/h5: same detail
+  - Body text: same detail
+  - Eyebrow/labels: same detail (usually 0.7rem, uppercase, 0.3-0.4em letter-spacing)
+  - Button text: same detail
+- Font pairing rationale: WHY these fonts work together for this brand
+- Three-font rule: Serif for dramatic headings, Sans for body, Accent for labels/buttons/UI
+
+### LAYER 02 — COLOR (Complete Color Architecture)
+- Define ALL colors as CSS custom properties with EXACT values:
+  \`\`\`css
+  :root {
+    --primary-color: [user's primary];
+    --accent-color: [user's accent];
+    --bg-color: [user's background];
+    --text-color: #ffffff;
+    --nav-bg: rgba(0, 0, 0, 0.4);
+  }
+  \`\`\`
+- Complete opacity hierarchy system for dark themes:
+  - 100% white → Primary headings, CTAs, hero titles
+  - rgba(255,255,255,0.7) → Subheading text, secondary info
+  - rgba(255,255,255,0.6) → Body copy, descriptions, paragraphs
+  - rgba(255,255,255,0.55) → Footer links, tertiary text
+  - rgba(255,255,255,0.35) → Labels, eyebrow text, column titles
+  - rgba(255,255,255,0.2) → Borders, dividers, UI rules
+  - rgba(255,255,255,0.05) → Subtle backgrounds, nav borders
+  - rgba(255,255,255,0.03) → Glass card backgrounds
+- Include exact gradient overlay formulas for EACH section:
+  - Hero overlay: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.8) 100%)
+  - Showcase overlay: linear-gradient(to right, rgba(0,0,0,0.92) 0%, transparent 100%)
+  - Heritage overlay: linear-gradient(to left, rgba(0,0,0,0.85) 0%, transparent 100%)
+- Hover states, focus states, and active states with exact color values
+
+### LAYER 03 — GLASS EFFECTS (Complete Glass CSS)
+- Define TWO glass variants with COMPLETE, COPY-PASTE-READY CSS:
+  - SUBTLE GLASS (navbar, cards, stat badges):
+    \`\`\`css
+    backdrop-filter: blur(4px);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid;
+    border-image: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.08)) 1;
+    border-radius: 12px;
+    \`\`\`
+  - STRONG GLASS (CTA buttons, modal, prominent UI):
+    \`\`\`css
+    backdrop-filter: blur(50px);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid;
+    border-image: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.15)) 1;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border-radius: 16px;
+    \`\`\`
+- Glass borders MUST use linear-gradient borders that simulate light refraction — NOT solid white borders
+- Include hover transition: transition: all 0.3s ease; background on hover slightly brighter
+
+### LAYER 04 — LAYOUT (Section-by-Section HTML Blueprint)
+For EACH section the user selected, describe the COMPLETE element tree, like this format:
+\`\`\`
+section.hero
+├── div.hero-bg
+│   ├── video.bg-video [autoplay, loop, muted, playsinline]
+│   │   └── source [src="hero-video.mp4", type="video/mp4"]
+│   └── div.hero-overlay
+└── div.hero-content
+    ├── div.hero-text-bg → "BRAND" (giant watermark, 20vw, rgba(255,255,255,0.03))
+    └── div.hero-details
+        ├── h1.hero-title → "[Brand Name]<br><span class='accent'>[Tagline]</span>"
+        ├── p.hero-subtitle → description text
+        └── div.hero-cta-group
+            ├── span.limited-tag → tag text with ::before pink line
+            └── a.primary-btn → "Explore" (links to brand page)
+\`\`\`
+
+Include for EVERY section:
+- Position strategy (sticky, relative, fixed)
+- z-index value
+- Height (100vh, auto, 300vh for canvas sections)
+- Background treatment (image with overlay, video, solid color)
+- Content positioning (absolute, flex, grid)
+- Responsive behavior at 1024px and 768px breakpoints
+
+Section-specific layout rules:
+- NAVBAR: position: fixed, z-index: 1000, 3-column flex (left links, center logo, right CTA), backdrop-filter blur(10px), hides on scroll-down/shows on scroll-up via transform: translateY(-100%)
+- HERO: position: sticky, top: 0, z-index: 1 (other sections scroll OVER it), 100vh, background video with object-fit: cover, gradient overlay, content at bottom-left
+- FEATURES/PRODUCT: z-index: 5-10, chess layout or alternating image/text, full-bleed backgrounds
+- STATS: Video background with CSS filter: saturate(0.3), glass card overlay with large serif numbers
+- TESTIMONIALS: 3-column glass card grid
+- CTA: Full-width video background, large serif headline
+- FOOTER: background #050505, 5-column grid (1.4fr 1fr 1fr 1fr 1.4fr), gold gradient top-rule, social icon circles
+
+### LAYER 05 — MOTION (Complete Animation Architecture)
+ALL animations MUST use ONLY:
+- **GSAP (GreenSock)** with **ScrollTrigger** for scroll-driven animations
+- **Framer Motion** for component-level entrance animations and interactions
+- **Lenis** for smooth inertia scrolling (optional but recommended)
+
+Provide a COMPLETE ANIMATION SPECIFICATIONS TABLE:
+| Element | Trigger | Start | End | Effect | Ease | Scrub |
+|---|---|---|---|---|---|---|
+| .bg-video (entrance) | DOMContentLoaded | — | — | scale 1.2→1.05, opacity 0→1 | power2.out | No |
+| .bg-video (scroll) | .hero | top top | bottom top | scale 1.05→1 | — | Yes |
+| .hero-details | .hero | top top | bottom top | y: 0→-150 | — | Yes |
+| .hero-text-bg | .hero | top top | bottom top | y: 0→-250 | — | 1.2 |
+| .nav (entrance) | DOMContentLoaded | — | — | y: -100→0, opacity 0→1 | power4.out | No |
+
+Include these NAMED animation patterns with EXACT timing:
+1. wordByWordBlur: Each word from blur(10px), y:50, opacity:0 → clear. 100ms stagger. IntersectionObserver-triggered.
+2. delayedBlurFade: Full element blur fade. Delay 0.8s. Duration 0.6s. ease: power2.out.
+3. ctaLastEntrance: Blur-fade sequence. Delay 1.1s. Sequence: headline → subtext → CTA button. Stagger 0.3s.
+4. videoFadedEdges: 200px gradient overlays on top + bottom edges of video elements.
+5. parallaxScroll: Scroll-driven y-offset using GSAP scrub: true. Background moves at 0.3x scroll speed.
+6. staggeredCardReveal: Cards enter from y:80, opacity:0 with 150ms stagger. toggleActions: 'play none none reverse'.
+7. stickyHeroScrollOver: Hero section position: sticky, subsequent sections scroll over it creating depth.
+8. navAutoHide: Nav hides on scroll-down (translateY: -100%), reveals on scroll-up, with 0.3s transition.
+
+For canvas frame animation (if applicable): describe frame count, image naming convention, scroll range, GSAP tween from {frame: 0} to {frame: N}, snapped to integers, ease: 'none', scrubbed.
+
+Animation intensity mapping:
+- 0-30%: Minimal — simple opacity fades (0.6s), no parallax, no blur effects
+- 31-70%: Moderate — blur fades, gentle parallax (y: -80), entrance animations with toggleActions
+- 71-100%: Cinematic — word-by-word blur reveals, heavy parallax (y: -250), scroll-driven canvas frame sequences, scrubbed rotations, scale transforms
+
+### FULL_PROMPT (THE FINAL DELIVERABLE)
+- Merge ALL 5 layers into ONE MASSIVE, cohesive document — 5,000+ words minimum
+- This is the final copy-paste-ready creative brief for Stitch
+- Structure: Fonts → Color → Glass → Layout (section by section with HTML trees) → Motion (with animation table)
+- Include ALL CSS code blocks inline
+- Include ALL GSAP specifications with start/end/scrub values
+- Include ALL HTML element trees with class names
+- Include the gradient overlay formulas for each section
+- Include z-index stacking order
+- Include responsive breakpoint notes
+- Write it as a COMPLETE build specification that a developer could hand off to production
+- Do NOT use placeholders — use the actual brand name, tagline, and colors provided
+
+## DESIGN PHILOSOPHY (Enforce These):
+1. Dark-first: Every section on near-black. White text. No light backgrounds ever.
+2. Full-bleed immersion: Every section is 100vh minimum. No visible padding between sections. Images object-fit: cover.
+3. Cinematic overlays: Gradient overlays on ALL background images for text readability without reducing drama.
+4. Typography hierarchy: Three fonts with distinct roles.
+5. Motion is king: Every element enters with intentional GSAP animation. No element simply appears.
+6. Sticky hero → scroll-over: Hero pins behind content, creating depth.
+7. Glass borders catch light: linear-gradient borders, NOT solid white lines.
+
+## ADDITIONAL RULES:
+- The user's additional details box may contain random context. Intelligently extract and place each piece into the appropriate layer.
+- NEVER use generic placeholder text. Use the actual brand name and tagline.
+- If the user provided custom animation names, define those with appropriate GSAP/Framer Motion timing.
+- This brief is for UI/UX DESIGN screens — not a full coded website. But the specifications must be precise enough that they COULD be coded directly.
+`;
+  }
+
   let prompt = `You are the BananaVault Prompt Engine — a professional JSON prompt generator for AI image generation. The JSON you produce will be consumed by ${targetModel === "gpt-image" ? "OpenAI GPT Image" : "Google Nano Banana Pro"}.
 
 Your output is constrained to a strict JSON schema. Each schema field carries a description telling you exactly what it must contain — follow them precisely.
@@ -392,6 +601,47 @@ function buildUserParts(payload: GeneratePayload): any[] {
     if (payload.mockupCount && payload.mockupCount > 1) {
       userMessage += `\nThe user requested ${payload.mockupCount} mockups. Design the prompt for a SINGLE image with a COLLAGE/GRID layout showing ${payload.mockupCount} different variations/angles. Set output.type to "multi-panel" and output.layout to the grid (e.g., "2x2_grid", "1x3_grid"). Start the "prompt" with "Split-screen grid layout showing ${payload.mockupCount} different mockup variations...".\n`;
     }
+  } else if (payload.mode === "3d_website") {
+    userMessage = `[MODE: 3D WEBSITE — 5-LAYER CREATIVE BRIEF]\n\n`;
+    userMessage += `Brand Name: ${payload.brandName || "Unnamed Brand"}\n`;
+    if (payload.tagline) userMessage += `Tagline / Hero Headline: ${payload.tagline}\n`;
+    if (payload.description) userMessage += `Description: ${payload.description}\n`;
+    userMessage += `Website Type: ${payload.websiteType || "landing"}\n`;
+    userMessage += `\n--- COLOR SCHEME ---\n`;
+    userMessage += `Primary Color: ${payload.primaryColor || "#6366f1"}\n`;
+    userMessage += `Accent Color: ${payload.accentColor || "#d4af7a"}\n`;
+    userMessage += `Background Color: ${payload.bgColor || "#0b0b0b"}\n`;
+    userMessage += `\n--- FONTS ---\n`;
+    userMessage += `Heading Font: ${payload.headingFont || "(AI to pick a premium serif/display font)"}\n`;
+    userMessage += `Body Font: ${payload.bodyFont || "(AI to pick a clean sans-serif)"}\n`;
+    if (payload.heroMediaUrl) userMessage += `\nHero Media URL: ${payload.heroMediaUrl}\n`;
+    if (payload.additionalMediaUrls && payload.additionalMediaUrls.length > 0) {
+      userMessage += `Additional Media URLs:\n`;
+      payload.additionalMediaUrls.forEach((url, i) => {
+        userMessage += `  - Media ${i + 1}: ${url}\n`;
+      });
+    }
+    userMessage += `\n--- SECTIONS TO INCLUDE ---\n`;
+    userMessage += `${(payload.websiteSections || ["navbar", "hero", "features", "cta", "footer"]).join(", ")}\n`;
+    userMessage += `\n--- GLASS STYLE ---\n`;
+    userMessage += `Glass Effect Style: ${payload.glassStyle || "both"}\n`;
+    userMessage += `\n--- ANIMATION ---\n`;
+    userMessage += `Animation Intensity: ${payload.animationIntensity ?? 80}% (0=minimal, 100=cinematic)\n`;
+    if (payload.animationNames) {
+      userMessage += `Custom Animation Names to include: ${payload.animationNames}\n`;
+    }
+    if (payload.additionalDetails) {
+      userMessage += `\n--- ADDITIONAL DETAILS (extract and place intelligently) ---\n`;
+      userMessage += `${payload.additionalDetails}\n`;
+    }
+
+    // Reference images for 3D Website are style references
+    if (payload.referenceImages && payload.referenceImages.length > 0) {
+      userMessage += `\nReference screenshot(s) are attached. Extract the visual style, layout patterns, and design language from them.\n`;
+      payload.referenceImages.forEach((img, i) => pushImage(`IMAGE ${i + 1}: WEBSITE STYLE REFERENCE`, img));
+    }
+
+    userMessage += `\nGenerate the complete 5-Layer Creative Brief now. Make it MASSIVE, DETAILED, and PREMIUM.`;
   }
 
   userMessage += `\nGenerate the complete BananaVault JSON prompt now.`;
@@ -405,12 +655,12 @@ function buildUserParts(payload: GeneratePayload): any[] {
 // Gemini call with 429 key rotation + exponential backoff + truncation check.
 // ---------------------------------------------------------------------------
 
-async function callGemini(body: Record<string, unknown>, retryCount = 0): Promise<string> {
+async function callGemini(body: Record<string, unknown>, retryCount = 0, model = "gemini-2.5-flash"): Promise<string> {
   const keysCount = getApiKeys().length;
   const maxRetries = keysCount > 0 ? keysCount - 1 : 0;
   const apiKey = getNextKey();
 
-  const response = await fetch(GEMINI_URL(apiKey), {
+  const response = await fetch(GEMINI_URL(apiKey, model), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -419,7 +669,7 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0): Promis
   if (response.status === 429 && retryCount < maxRetries) {
     console.log(`Rate limited, rotating key (attempt ${retryCount + 1}/${maxRetries})...`);
     await sleep(500 * (retryCount + 1));
-    return callGemini(body, retryCount + 1);
+    return callGemini(body, retryCount + 1, model);
   }
 
   if (!response.ok) {
@@ -546,21 +796,25 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
   const systemPrompt = getSystemPrompt(payload);
   const responseSchema = buildResponseSchema(payload);
 
+  // Use gemini-3.5-flash for 3D Website mode (bigger output), gemini-2.5-flash for image modes
+  const model = payload.mode === "3d_website" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+
   const makeBody = (extraParts: Array<{ text: string }> = []) => ({
     contents: [{ role: "user", parts: [...parts, ...extraParts] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      temperature: 0.35,
+      temperature: payload.mode === "3d_website" ? 0.7 : 0.35,
       topP: 0.9,
       topK: 40,
       responseMimeType: "application/json",
       responseSchema,
-      thinkingConfig: { thinkingBudget: 0 },
+      // 3D Website mode: enable thinking for deeper creative reasoning
+      thinkingConfig: payload.mode === "3d_website" ? { thinkingBudget: 8192 } : { thinkingBudget: 0 },
     },
   });
 
   // First attempt
-  let text = await callGemini(makeBody());
+  let text = await callGemini(makeBody(), 0, model);
   let result = validateGeneratedJson(text, payload);
   if (result.ok && result.value) return result.value;
 
@@ -569,7 +823,7 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
   const repairPart = {
     text: `Your previous output failed validation with this error: "${result.error}". Regenerate the COMPLETE JSON object from scratch, strictly following the schema and all rules. Output raw JSON only.`,
   };
-  text = await callGemini(makeBody([repairPart]));
+  text = await callGemini(makeBody([repairPart]), 0, model);
   result = validateGeneratedJson(text, payload);
   if (result.ok && result.value) return result.value;
 

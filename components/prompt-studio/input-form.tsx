@@ -18,7 +18,7 @@ const MOCKUP_TYPES = [
   { id: "billboard", label: "Billboard / OOH" },
 ];
 
-export type GenerationMode = "standard" | "face_swap" | "mockup";
+export type GenerationMode = "standard" | "face_swap" | "mockup" | "3d_website";
 
 export interface GeneratePayload {
   mode: GenerationMode;
@@ -36,6 +36,22 @@ export interface GeneratePayload {
   mockupTypes?: string[];
   targetModel?: "nano-banana-pro" | "gpt-image";
   styleDirectives?: { label: string; directive: string }[];
+  // 3D Website mode fields
+  brandName?: string;
+  tagline?: string;
+  websiteType?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  bgColor?: string;
+  headingFont?: string;
+  bodyFont?: string;
+  heroMediaUrl?: string;
+  additionalMediaUrls?: string[];
+  websiteSections?: string[];
+  glassStyle?: string;
+  animationIntensity?: number;
+  animationNames?: string;
+  additionalDetails?: string;
 }
 
 export interface CustomStyle {
@@ -137,6 +153,23 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [mockupCount, setMockupCount] = useState<number>(1);
   const [selectedMockupTypes, setSelectedMockupTypes] = useState<string[]>([]);
 
+  // 3D Website specific
+  const [brandName, setBrandName] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [websiteType, setWebsiteType] = useState("landing");
+  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [accentColor, setAccentColor] = useState("#d4af7a");
+  const [bgColor, setBgColor] = useState("#0b0b0b");
+  const [headingFont, setHeadingFont] = useState("");
+  const [bodyFont, setBodyFont] = useState("");
+  const [heroMediaUrl, setHeroMediaUrl] = useState("");
+  const [additionalMediaUrls, setAdditionalMediaUrls] = useState<string[]>(["", "", ""]);
+  const [websiteSections, setWebsiteSections] = useState<string[]>(["navbar", "hero", "features", "cta", "footer"]);
+  const [glassStyle, setGlassStyle] = useState("both");
+  const [animationIntensity, setAnimationIntensity] = useState(80);
+  const [animationNames, setAnimationNames] = useState("");
+  const [additionalDetails, setAdditionalDetails] = useState("");
+
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
 
@@ -211,10 +244,19 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
     }
   };
 
+  const toggleSection = (sectionId: string) => {
+    setWebsiteSections(prev =>
+      prev.includes(sectionId)
+        ? prev.filter(s => s !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
+
   const isValid = () => {
     if (mode === "standard") return description.trim().length > 0;
     if (mode === "face_swap") return sourceFaceImage !== null && targetPoseImage !== null;
     if (mode === "mockup") return logoImage !== null && (mockupReferenceImage !== null || logoDescription.trim().length > 0);
+    if (mode === "3d_website") return brandName.trim().length > 0;
     return false;
   };
 
@@ -247,6 +289,22 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       mockupTypes: selectedMockupTypes.length > 0 ? selectedMockupTypes : undefined,
       targetModel,
       styleDirectives: styleDirectives.length > 0 ? styleDirectives : undefined,
+      // 3D Website fields
+      brandName: brandName.trim() || undefined,
+      tagline: tagline.trim() || undefined,
+      websiteType: websiteType || undefined,
+      primaryColor: primaryColor || undefined,
+      accentColor: accentColor || undefined,
+      bgColor: bgColor || undefined,
+      headingFont: headingFont.trim() || undefined,
+      bodyFont: bodyFont.trim() || undefined,
+      heroMediaUrl: heroMediaUrl.trim() || undefined,
+      additionalMediaUrls: additionalMediaUrls.filter(u => u.trim()) || undefined,
+      websiteSections: websiteSections.length > 0 ? websiteSections : undefined,
+      glassStyle: glassStyle || undefined,
+      animationIntensity: animationIntensity,
+      animationNames: animationNames.trim() || undefined,
+      additionalDetails: additionalDetails.trim() || undefined,
     });
   };
 
@@ -255,8 +313,8 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       <div className="max-w-[1200px] mx-auto">
         
         {/* Mode Selector */}
-        <div className="flex gap-2 mb-8 p-1 bg-white/5 rounded-lg w-max border border-white/10">
-          {(["standard", "face_swap", "mockup"] as GenerationMode[]).map((m) => (
+        <div className="flex flex-wrap gap-2 mb-8 p-1 bg-white/5 rounded-lg w-max border border-white/10">
+          {(["standard", "face_swap", "mockup", "3d_website"] as GenerationMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -264,7 +322,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                 mode === m ? "bg-white text-black" : "text-white/50 hover:text-white"
               }`}
             >
-              {m.replace("_", " ")}
+              {m === "3d_website" ? "3D Website" : m.replace("_", " ")}
             </button>
           ))}
         </div>
@@ -455,8 +513,169 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             </div>
           )}
 
-          {/* Visual style picker (Multi-select) */}
-          <div className="mb-8">
+          {mode === "3d_website" && (
+            <div className="mb-6 space-y-6">
+              {/* Row 1: Brand Name + Tagline */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Brand Name (Required)</label>
+                  <input type="text" value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g., Zenith Studios" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Tagline / Hero Headline</label>
+                  <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="e.g., Design Beyond Limits" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Brief Description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this brand/product do? e.g., A luxury watch brand..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Website Type */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Website Type</label>
+                <div className="flex flex-wrap gap-2">
+                  {["landing", "portfolio", "saas", "ecommerce", "agency", "product-showcase"].map(t => (
+                    <button key={t} onClick={() => setWebsiteType(t)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      websiteType === t ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {t.replace("-", " ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Color Scheme</label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Primary</span>
+                      <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Accent</span>
+                      <input type="text" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Background</span>
+                      <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fonts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Heading Font (Google Fonts name)</label>
+                  <input type="text" value={headingFont} onChange={(e) => setHeadingFont(e.target.value)} placeholder="e.g., Playfair Display" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Body Font (Google Fonts name)</label>
+                  <input type="text" value={bodyFont} onChange={(e) => setBodyFont(e.target.value)} placeholder="e.g., Inter" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* Hero Media URL */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Hero Media URL (MP4 video or image link)</label>
+                <input type="text" value={heroMediaUrl} onChange={(e) => setHeroMediaUrl(e.target.value)} placeholder="https://example.com/hero-video.mp4" className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* Additional Media URLs */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Additional Media URLs (Optional, up to 3)</label>
+                <div className="space-y-2">
+                  {additionalMediaUrls.map((url, i) => (
+                    <input key={i} type="text" value={url} onChange={(e) => { const next = [...additionalMediaUrls]; next[i] = e.target.value; setAdditionalMediaUrls(next); }} placeholder={`Media URL ${i + 1} (image or video)`} className="input-multia w-full px-4 py-2 text-sm" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Sections to Include */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Sections to Include</label>
+                <div className="flex flex-wrap gap-2">
+                  {["navbar", "hero", "features", "stats", "testimonials", "pricing", "showcase", "collection", "cta", "footer"].map(s => (
+                    <button key={s} onClick={() => toggleSection(s)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      websiteSections.includes(s) ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Glass Style */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Glass Effect Style</label>
+                <div className="flex gap-2">
+                  {["subtle", "strong", "both"].map(g => (
+                    <button key={g} onClick={() => setGlassStyle(g)} className={`px-4 py-2 rounded text-sm transition-colors ${
+                      glassStyle === g ? "bg-white text-black" : "bg-white/10 text-white/70 hover:bg-white/20"
+                    }`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Animation Intensity */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Animation Intensity: {animationIntensity}%</label>
+                <input type="range" min={0} max={100} value={animationIntensity} onChange={(e) => setAnimationIntensity(Number(e.target.value))} className="w-full accent-white" />
+                <div className="flex justify-between text-[10px] text-white/20 mt-1"><span>Minimal</span><span>Cinematic</span></div>
+              </div>
+
+              {/* Animation Names */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Animation Names (Optional — GSAP / Framer Motion)</label>
+                <input type="text" value={animationNames} onChange={(e) => setAnimationNames(e.target.value)} placeholder="e.g., word-by-word blur, parallax scroll, staggered entrance, flip reveal" className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* Additional Details */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Additional Details (Optional — anything extra)</label>
+                <textarea value={additionalDetails} onChange={(e) => setAdditionalDetails(e.target.value)} placeholder="Add any extra context, inspiration links, specific section descriptions, brand values, etc. The AI will intelligently extract and place this information in the right layer." rows={4} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Reference Image */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Reference Screenshot (Optional)</label>
+                <div className="flex items-center gap-4">
+                  {referenceImages.length < 2 && (
+                    <label className="flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded border border-white/10 cursor-pointer hover:bg-white/5">
+                      <input type="file" accept="image/*" multiple onChange={handleMultipleImageUpload} className="hidden" disabled={isLoading} />
+                      Upload Screenshot
+                    </label>
+                  )}
+                  {referenceImages.length > 0 && (
+                    <div className="flex gap-2">
+                      {referenceImages.map((img, i) => (
+                        <div key={i} className="relative group">
+                          <img src={img} alt="Ref" className="h-10 w-10 object-cover rounded border border-white/20" />
+                          <button onClick={() => removeReferenceImage(i)} className="absolute -top-2 -right-2 bg-black text-white rounded-full opacity-0 group-hover:opacity-100 border border-white/20">❌</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Visual style picker (Multi-select) — hidden for 3D Website mode */}
+          {mode !== "3d_website" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Styles (Select Multiple)</label>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {STYLE_PRESETS.map((style) => (
@@ -527,10 +746,10 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
               </label>
             </div>
             {styleError && <p className="text-xs text-red-400 mt-2 font-body">{styleError}</p>}
-          </div>
+          </div>}
 
-          {/* Target image model selector */}
-          <div className="mb-8">
+          {/* Target image model selector — hidden for 3D Website mode */}
+          {mode !== "3d_website" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Image Model</label>
             <div className="flex gap-2">
               {([["nano-banana-pro", "Nano Banana Pro"], ["gpt-image", "GPT Image"]] as const).map(([id, label]) => (
@@ -543,7 +762,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* Generate button */}
           <button

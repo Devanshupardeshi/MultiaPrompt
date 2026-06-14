@@ -1,0 +1,273 @@
+D E S I G N  X S T R E A M  ·  F I E L D  G U I D E  № 0 1
+2 0 2 6  E D I T I O N
+The 5-Layer
+Prompt
+Framework
+A N  E B O O K  O N  P R O M P T I N G  ·  F O R  D E S I G N E R S
+The 5-Layer
+Prompt
+Framework
+How to generate stunning, studio-quality landing pages with AI — a
+beginner's guide.
+S T O P  G E T T I N G  A V E R A G E .  S T A R T  G E T T I N G  C I N E M A T I C .
+B Y  D E S I G N  X S T R E A M
+P U B L I S H E D  2 0 2 6
+THE 5-LAYER PROMPT FRAMEWORK
+INTRODUCTION
+WELCOME
+§ 00
+Why most AI-generated
+designs look cheap.
+You've seen them. The landing pages that look like they were made in 2019. Generic
+fonts, flat colors, lifeless layouts. The kind of page that screams "AI did this" — and
+not in a good way.
+Here's the truth: the AI isn't the problem. The prompt is.
+Most people treat AI design tools like a vending machine — put in a vague request,
+hope something decent comes out. "Make me a dark landing page for a tech startup."
+And you get exactly what you asked for. Technically correct. Completely forgettable.
+The designers getting jaw-dropping results aren't more creative than you. They're
+more specific than you.
+They've learned that AI works like a junior designer — incredibly fast, technically
+capable, but completely dependent on the brief you give it.
+This ebook teaches you that brief. A 5-layer framework that transforms your prompts
+from vague instructions into a creative director's brief — the kind that produces
+pages that feel cinematic, premium, and intentional.
+Think of it like directing a junior designer who's incredibly fast but
+needs clear direction. Give it clarity, and it gives you craft.
+By the time you finish this guide, you'll know exactly how to specify fonts, colors,
+glass effects, layouts, and motion in a way that makes AI produce work you're
+genuinely proud of. Let's begin.
+02
+INTRODUCTION
+THE 5-LAYER PROMPT FRAMEWORK
+CH 01 · FONTS
+01/05
+LAYER 01 OF 05
+FONTS
+Fonts: name them.
+Both of them.
+The single fastest way to elevate any AI design.
+Every AI tool has a default. And that default is almost always Inter or Roboto — clean,
+neutral, completely unremarkable. When you say "use a nice font," you're handing
+the wheel to the algorithm, and the algorithm plays it safe.
+The fix is embarrassingly simple: name the fonts yourself. Not "a serif headline font."
+Not "something elegant." The actual name. The actual weights. The actual Google
+Fonts URL.
+WHY TWO FONTS?
+One font does one thing. A combination of two — a distinctive heading face and a
+refined body face — creates hierarchy, personality, and contrast. It's the difference
+between a page that feels designed and a page that feels generated.
+THE FORMULA THAT WORKS
+Pair an expressive, characterful headline font with a clean, legible body font. Italic
+display + light grotesque creates a luxury editorial feel.
+HEADING
+BODY
+VIBE
+Instrument Serif (italic)
+Barlow 300 / 400
+Luxury editorial
+Anton
+System mono
+Industrial, Web3
+Almarai 800
+Almarai 300
+Warm, cinematic
+03
+CH 01 · FONTS
+THE 5-LAYER PROMPT FRAMEWORK
+CH 02 · COLOR
+02/05
+LAYER 02 OF 05
+COLOR
+Stop saying "dark
+background."
+Exact values, not vibes. A system, not a color.
+Every beginner prompt says "dark background." The AI hears this and gives you
+#1a1a1a or #222222. That's dark grey. And dark grey is not cinematic. True black —
+#000000 or very close — is what separates cheap from premium.
+But color isn't just the background. It's the entire opacity system that creates depth.
+THE OPACITY HIERARCHY
+On a dark, premium page you rarely use flat white text. You build a layered system at
+different opacities. The eye knows exactly where to look.
+100%
+Primary heading
+HEADINGS ·
+CTAS
+70%
+Subheading text
+SUBHEADS
+60%
+Secondary body copy
+BODY ·
+DESCRIPTIONS
+20%
+Borders, dividers
+UI · RULES
+HOW TO SPECIFY COLOR
+Use CSS custom properties in HSL. Define every value, including the opacity
+hierarchy. Give the AI a system, not a color — it produces consistent results across
+every component.
+04
+CH 02 · COLOR
+THE 5-LAYER PROMPT FRAMEWORK
+CH 03 · GLASS
+03/05
+LAYER 03 OF 05
+GLASS EFFECTS
+Bad glass, and
+liquid glass.
+Described physics, not buzzwords. Real glass catches light at the edges.
+Glassmorphism is everywhere in 2026 — which means most of it looks the same. A
+blurry box with a white border. That's not liquid glass. That's a CSS tutorial.
+Liquid glass catches light. It has gradient borders that fade in the middle, simulating
+real refraction. It has different strengths for different contexts. It behaves like
+a material.
+TWO VERSIONS YOU ALWAYS NEED
+SUBTLE · CARDS, NAVBAR, BADGES
+backdrop-filter: blur(4px). Gradient border (no solid edge). Catches light at the edges.
+STRONG · CTA BUTTONS, PROMINENT UI
+backdrop-filter: blur(50px). Brighter gradient border. Box-shadow for depth. Weighty,
+premium.
+SUBTLE
+Glass card
+STRONG
+CTA button
+05
+CH 03 · GLASS
+THE 5-LAYER PROMPT FRAMEWORK
+CH 04 · LAYOUT · I
+04/05
+LAYER 04 OF 05 · PART I
+LAYOUT · SKELETON
+Layout: give it a skeleton.
+Don't say "clean layout." Name every section. Describe its structure.
+This is where most intermediate prompt writers fail. They nail the fonts, colors, and
+glass — and then write "clean modern layout with hero, features, footer." The AI does
+its best, and its best is generic. Layout is architecture. You wouldn't hand an architect
+a brief that says "nice building." You'd hand them a floor plan. Section by section.
+Element by element.
+01
+SECTION · NAVBAR
+Floating glass pill
+Fixed, floating above content. Logo left. Nav links inside a glass pill,
+centered. Solid white CTA as the last item in the pill, with an ArrowUpRight
+icon. The pill shape alone signals "premium."
+02
+SECTION · HERO
+Cinematic first impression
+1000px tall. Video or image background. Badge pill above headline ·
+animated headline · subtext with delay · two CTAs (one glass, one text-
+only) · partners bar at bottom: "Trusted by Stripe, Vercel, Linear."
+03
+SECTION · FEATURES
+The chess layout
+Alternate sides instead of card grids. Text left → media right · then flip ·
+text right → media left. Each row carries a title, body paragraph, "Learn
+more" glass button, and media in a glass container. Visual rhythm replaces
+monotony.
+06
+CH 04 · LAYOUT · I
+THE 5-LAYER PROMPT FRAMEWORK
+CH 04 · LAYOUT · II
+04/05
+LAYER 04 OF 05 · PART II
+LAYOUT · FINISHING
+The closing moves of
+the page.
+04
+SECTION · STATS
+Desaturated video moment
+Video background with filter: saturate(0). A glass card on top with a
+4-column grid of large stats. Strip color to make numbers pop — borrowed
+from cinema.
+05
+SECTION · TESTIMONIALS
+Trust layer
+Three-column grid. Glass cards. Quote in italic, lighter weight. Name and
+role below. Needs precision in card structure, not creativity in layout.
+06
+SECTION · CTA + FOOTER
+The close
+Full-width video background. Large italic headline. Two buttons: one glass,
+one solid white. The contrast is intentional — glass for primary, solid for
+secondary. Solid white reads louder, anchoring the eye against the moving
+video behind it.
+The more sections you blueprint, the less the AI has to guess. Every
+guess it makes is a risk of getting it wrong.
+07
+CH 04 · LAYOUT · II
+THE 5-LAYER PROMPT FRAMEWORK
+CH 05 · MOTION
+05/05
+LAYER 05 OF 05
+MOTION · TIMING
+Motion: timing like a
+creative director.
+"Add animations" gets you bouncing buttons. This gets you a page that breathes.
+Most beginners either skip motion or write "add smooth animations." Both produce
+something that moves but doesn't feel intentional. The difference between a page
+that loads and a page that arrives is choreography — sequence, timing, and restraint.
+THE MOTION LANGUAGE
+01
+Headlines · word-by-word blur
+Each word from blur(10px)·y:50·opacity:0. 100ms stagger.
+IntersectionObserver-triggered.
+02
+Subtext · delayed blur fade
+Same fade as a unit. Delay 0.8s. Duration 0.6s.
+03
+CTA buttons · last to enter
+Same blur-fade. Delay 1.1s. Headline → subtext → action.
+04
+Video · faded edges
+200px gradient overlays top + bottom. Hero bottom uses 300px.
+05
+Stats video · desaturate
+filter: saturate(0) — strips color so numbers pop.
+Motion isn't decoration. It's sequence.
+08
+CH 05 · MOTION
+THE 5-LAYER PROMPT FRAMEWORK
+CH 06 · THE COMPLETE FRAMEWORK
+THE COMPLETE FRAMEWORK
+§ 06
+Your brief is
+your design.
+How to assemble all five layers into a prompt that works like magic.
+THE MINDSET SHIFT
+Stop thinking of prompts as instructions. Start thinking of them as briefs. A brief is
+what a creative director hands to a designer before a project begins. It says: here are
+the fonts, here's the color system, here's how the glass effects work, here's the
+section-by-section structure, here's how everything moves.
+The AI is your junior designer. Exceptionally fast. Technically skilled. Completely
+dependent on the brief.
+THE ASSEMBLY ORDER
+01
+Fonts
+Google Fonts URL · weights · Tailwind aliases.
+02
+Color
+CSS custom properties · full opacity hierarchy.
+03
+Glass effects
+Full CSS for both subtle and strong.
+04
+Layout
+Section-by-section, element-by-element blueprint.
+05
+Motion
+Named patterns with exact timing.
+09
+CH 06 · THE COMPLETE FRAMEWORK
+D E S I G N  X S T R E A M  ·  F I E L D  G U I D E  № 0 1
+E N D
+"That's not a prompt. That's a brief."
+— AND ONE LAST THOUGHT
+"That's not a prompt. That's a brief."
+T H E  D E S I G N  X S T R E A M  5 - L A Y E R  P R O M P T  F R A M E W O R K
+Pick one project. Apply one layer. Notice the difference. Add the next. By the
+time you're writing all five naturally, you won't be prompting AI anymore —
+you'll be directing it.
+—  T H E  D E S I G N  X S T R E A M  T E A M
+©  2 0 2 6  D E S I G N  X S T R E A M
+D E S I G N X S T R E A M . C O M

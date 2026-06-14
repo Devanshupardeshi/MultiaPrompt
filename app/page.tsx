@@ -76,6 +76,7 @@ export default function Home() {
         isLoading={isLoading}
         error={error}
         onRegenerate={handleRegenerate}
+        mode={lastInput?.mode}
         hasImage={
           !!(
             (lastInput?.referenceImages && lastInput.referenceImages.length > 0) ||

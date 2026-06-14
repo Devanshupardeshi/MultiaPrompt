@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
     if (payload.mode === "mockup" && (!payload.logoImage)) {
       return NextResponse.json({ error: "Logo image is required for mockup mode" }, { status: 400 });
     }
+    if (payload.mode === "3d_website" && (!payload.brandName || !payload.brandName.trim())) {
+      return NextResponse.json({ error: "Brand name is required for 3D Website mode" }, { status: 400 });
+    }
 
     const result = await generatePrompt(payload);
 

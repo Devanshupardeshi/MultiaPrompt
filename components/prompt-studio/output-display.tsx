@@ -2,12 +2,15 @@
 
 import { useState, useCallback } from "react";
 
+import { GenerationMode } from "./input-form";
+
 interface OutputDisplayProps {
   json: string | null;
   isLoading: boolean;
   error: string | null;
   onRegenerate: () => void;
   hasImage?: boolean;
+  mode?: GenerationMode;
 }
 
 function syntaxHighlight(json: string): string {
@@ -37,8 +40,10 @@ export function OutputDisplay({
   error,
   onRegenerate,
   hasImage,
+  mode,
 }: OutputDisplayProps) {
   const [copied, setCopied] = useState(false);
+  const [activeLayer, setActiveLayer] = useState(0);
 
   const handleCopy = useCallback(async () => {
     if (!json) return;
@@ -163,8 +168,8 @@ export function OutputDisplay({
           </div>
         )}
 
-        {/* JSON output */}
-        {json && !isLoading && (
+        {/* JSON output — standard modes */}
+        {json && !isLoading && mode !== "3d_website" && (
           <div className="code-block">
             <div className="code-block-header">
               <span className="text-xs text-white/40 font-mono">
@@ -275,6 +280,102 @@ export function OutputDisplay({
             </div>
           </div>
         )}
+
+        {/* 3D Website — 5-Layer Creative Brief output */}
+        {json && !isLoading && mode === "3d_website" && (() => {
+          let parsed: any = {};
+          try { parsed = JSON.parse(json); } catch { parsed = {}; }
+          const layers = [
+            { key: "layer_1_fonts", label: "01 — Fonts", icon: "Aa" },
+            { key: "layer_2_color", label: "02 — Color", icon: "🎨" },
+            { key: "layer_3_glass", label: "03 — Glass", icon: "✨" },
+            { key: "layer_4_layout", label: "04 — Layout", icon: "📐" },
+            { key: "layer_5_motion", label: "05 — Motion", icon: "🎬" },
+            { key: "full_prompt", label: "Full Prompt", icon: "📋" },
+          ];
+
+          const handleCopyLayer = async (text: string) => {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }
+          };
+
+          return (
+            <div className="space-y-4">
+              {/* Layer tabs */}
+              <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-lg border border-white/10">
+                {layers.map((layer, i) => (
+                  <button
+                    key={layer.key}
+                    onClick={() => setActiveLayer(i)}
+                    className={`px-3 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors flex items-center gap-1.5 ${
+                      activeLayer === i ? "bg-white text-black" : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span>{layer.icon}</span>
+                    {layer.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active layer content */}
+              <div className="code-block">
+                <div className="code-block-header">
+                  <span className="text-xs text-white/40 font-mono">
+                    {layers[activeLayer].label}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleCopyLayer(parsed[layers[activeLayer].key] || "")}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
+                    >
+                      {copied ? "Copied!" : "Copy Layer"}
+                    </button>
+                    <button
+                      onClick={() => handleCopyLayer(parsed.full_prompt || "")}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
+                    >
+                      📋 Copy Full Prompt
+                    </button>
+                  </div>
+                </div>
+
+                <div className="code-block-body custom-scrollbar max-h-[600px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
+                    {parsed[layers[activeLayer].key] || "No content generated for this layer."}
+                  </pre>
+                </div>
+
+                <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[11px] text-white/15 font-body">
+                    Layer {activeLayer + 1} of {layers.length}
+                  </span>
+                  <button
+                    onClick={onRegenerate}
+                    className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    Regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </section>
   );
