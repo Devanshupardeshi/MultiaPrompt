@@ -162,7 +162,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
         logo_fidelity: {
           type: "STRING",
           description:
-            "Exhaustive visual description of the logo: exact shapes, colors, typography style and weight, iconography, proportions, spacing. Must instruct the generator to reproduce it exactly with zero redesign.",
+            "Exhaustive visual description of the logo: exact shapes, colors, typography style and weight, minute font details, iconography, proportions, spacing. You must extract every minute detail. Must instruct the generator to reproduce it exactly with zero redesign.",
         },
         application: {
           type: "STRING",
@@ -302,13 +302,14 @@ User idea: "a barista making latte art"
   } else if (payload.mode === "mockup") {
     prompt += `
 ## Mode: MOCKUP
-- Describe the uploaded logo VISUALLY in extreme detail in "branding.logo_fidelity" (exact shapes, colors, typography style and weight, iconography, proportions). The image generator only sees text — a vague reference like "the brand logo" makes it hallucinate a different logo.
+- Describe the uploaded logo VISUALLY in extreme detail in "branding.logo_fidelity" (exact shapes, colors, typography style and weight, minute font details, iconography, proportions). The image generator only sees text — a vague reference like "the brand logo" makes it hallucinate a different logo. You must extract every minute detail of the provided design.
+- EXISTING WATERMARKS/LOGOS: If the reference product image has any existing text, watermarks, or original branding, you MUST explicitly instruct the generator to remove them to create a clean, blank slate. Example: "a clean blank object with NO original text or watermarks".
 - Explicitly forbid logo alteration in both "prompt" and "negative_prompt": geometry, fonts, and layout must remain exactly as described.
 - Describe logo application as a "clean, perfectly flat, high-definition screen print" or "exact crisp decal". NEVER use "embroidered", "embossed", "engraved", or "woven" — texture distorts logo geometry.
 - Produce ultra-realistic commercial-quality mockup scenes. Do NOT introduce human subjects unless the user or the reference image requires them.
 
 ## Style anchor (tone only — never copy its content):
-"prompt" begins: "Commercial product photograph of a matte kraft paper shopping bag standing on a polished concrete surface, the logo applied as a clean perfectly flat high-definition screen print centered on the front panel, shot on an 85mm lens at f/5.6..."
+"prompt" begins: "Commercial product photograph of a clean, unbranded matte kraft paper shopping bag (no existing text or watermarks) standing on a polished concrete surface, the user's logo applied as a clean perfectly flat high-definition screen print centered on the front panel, shot on an 85mm lens at f/5.6..."
 `;
   }
 
