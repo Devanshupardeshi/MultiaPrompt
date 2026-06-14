@@ -607,69 +607,82 @@ Include entries for:
 9. **Physics-aware motion**: Elements respond to scroll velocity — fast scrolling skews/tilts elements, slow scrolling settles them.
 10. **Cinematic camera movement**: As the user scrolls, the virtual "camera" orbits around the 3D model, revealing different angles. Think Apple AirPods Pro page.
 
-## 3D MODEL INTEGRATION (Three.js / React Three Fiber / Spline):
-The website MUST include 3D model specifications for at least ONE section. Describe these in detail:
+## SCROLL-DRIVEN IMAGE SEQUENCES (The Apple-Style 3D Illusion):
+Stitch cannot render literal 3D models (like .gltf files). Instead, we simulate 3D by scrubbing through a pre-rendered high-res image sequence (e.g., 50-150 frames) drawn on an HTML \`<canvas>\` as the user scrolls.
 
-### 3D Scene Architecture:
+### Canvas Sequence Architecture:
+\`\`\`html
+<section class="canvas-container" style="height: 400vh; position: relative; background: #000;">
+  <div class="canvas-sticky" style="position: sticky; top: 0; height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <canvas id="hero-3d-sequence" width="1920" height="1080" style="max-width: 100%; object-fit: contain;"></canvas>
+  </div>
+</section>
 \`\`\`
-<Canvas camera={{ position: [0, 0, 5], fov: 45 }} style={{ position: 'sticky', top: 0, height: '100vh' }}>
-  <ambientLight intensity={0.4} />
-  <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
-  <spotLight position={[-3, 8, 3]} angle={0.3} penumbra={0.8} intensity={0.8} color="#accent" />
-  <Environment preset="studio" blur={0.5} />
-  <ContactShadows position={[0, -1.5, 0]} opacity={0.4} scale={10} blur={2} />
-  <ProductModel scrollProgress={scrollYProgress} />
-  <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
-</Canvas>
+\`\`\`javascript
+const frameCount = 100;
+// Assume images are preloaded into an array 'images'
+const tween = gsap.to({ frame: 0 }, {
+  frame: frameCount - 1,
+  snap: 'frame',
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.canvas-container',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 0.5
+  },
+  onUpdate: function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(images[Math.round(this.targets()[0].frame)], 0, 0);
+  }
+});
 \`\`\`
 
-### Scroll-Driven 3D Camera Choreography:
-Describe a camera orbit path tied to scroll progress (0% to 100%):
-- **0-15% scroll**: Camera at [0, 0, 5] — front view, model gently auto-rotating
-- **15-30% scroll**: Camera orbits to [3, 1, 4] — 3/4 angle, model stops auto-rotate
-- **30-50% scroll**: Camera zooms to [1, 0, 2.5] — close-up of hero feature, spotlight intensifies
-- **50-65% scroll**: Camera rises to [0, 3, 4] — top-down perspective, model parts start separating (exploded view)
-- **65-80% scroll**: Camera at [-3, 1, 4] — opposite side angle, parts reassemble with spring physics
-- **80-100% scroll**: Camera pulls back to [0, 0, 6] — wide reveal with all features highlighted, environment lights up
+### REQUIRED IMAGE GENERATION PROMPTS (Crucial):
+Because Stitch needs actual images to build this sequence, YOU MUST INCLUDE 3-5 specific JSON Image Prompts using our Prompting Logic at the end of your creative brief. The user will use these to generate the assets.
 
-### Model Interaction Patterns:
-- **Scroll-driven rotation**: Model rotates on Y-axis proportional to scroll (360° over the full section)
-- **Exploded view on scroll**: Model parts separate along their normals when scroll reaches 50-65% of section
-- **Material transitions**: Model material shifts from matte to glossy/metallic as scroll progresses
-- **Floating annotations**: Text labels float in 3D space near model features, fading in/out at specific scroll ranges
-- **Environment lighting shifts**: Background HDRI/environment changes from dark studio to bright showroom as scroll moves
+Format them exactly like this at the end of the brief:
+**ASSET GENERATION: Hero Sequence Start Frame**
+\`\`\`json
+{
+  "prompt": "Ultra-realistic macro shot of [Product] against a pure black background. Cinematic single overhead spotlight. The product is facing forward.",
+  "negative_prompt": "environments, colorful background, bright lighting",
+  "settings": { "style": "photorealistic", "camera_angle": "eye-level", "depth_of_field": "deep", "quality": "high detail" },
+  "task": "Generate the starting frame for a scroll sequence",
+  "output": { "aspect_ratio": "16:9", "resolution": "1536x1024" },
+  "environment": { "location": "studio", "background": "pure black", "lighting": { "type": "artificial", "quality": "dramatic" } },
+  "image_quality_simulation": { "sharpness": "tack_sharp", "noise": "clean_digital", "compression_artifacts": false, "dynamic_range": "hdr_capable", "white_balance": "neutral", "lens_imperfections": [] },
+  "explicit_restrictions": { "no_professional_retouching": false, "no_studio_lighting": false, "no_ai_beauty_filters": true, "no_high_end_camera_look": false },
+  "character_reference": null,
+  "subject": { "identity": "product", "biometric_fingerprint": "N/A", "facial_geometries": "N/A", "anchored_flaws": "N/A", "appearance": { "gender_or_type": "product", "age_or_condition": "new", "ethnicity_or_origin": null, "skin_texture": "metallic/matte", "hair": "none", "makeup": null, "expression": "none" }, "outfit": { "type": "none", "top": "none", "bottom": null, "colors": "dark" } }
+}
+\`\`\`
+**ASSET GENERATION: Hero Sequence End Frame (Exploded / Profile View)**
+*(Generate a second JSON prompt describing the product disassembled, glowing, or viewed from a drastic side angle, which the user will use to generate the final frame of the sequence).*
 
-### Spline Alternative (if no 3D model file):
-\`\`\`
-<Spline
-  scene="https://prod.spline.design/[scene-id]/scene.splinecode"
-  style={{ width: '100%', height: '100vh', position: 'sticky', top: 0 }}
-  onLoad={(spline) => {
-    // Bind scroll to spline object rotation
-    window.addEventListener('scroll', () => {
-      const progress = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-      spline.setVariable('scrollProgress', progress);
-    });
-  }}
-/>
-\`\`\`
+### Scene Choreography (The 3D Illusion):
+Describe how the image sequence tells a story tied to scroll progress (0% to 100%):
+- **0-15% scroll**: Sequence frames 0-15. Product emerges from shadows.
+- **15-50% scroll**: Sequence frames 16-50. Product rotates 90 degrees to reveal side profile.
+- **50-80% scroll**: Sequence frames 51-80. Product disassembles / opens up. Text annotations fade in via GSAP matching these exact frames.
+- **80-100% scroll**: Sequence frames 81-100. Product reassembles and camera pulls back.
 
 ## NARRATIVE STORY ARC:
 Structure the website as a STORY with these beats:
 
-1. **THE HOOK (Hero)** — Full-screen cinematic reveal. 3D model enters from darkness. Title characters flip in one by one. The user is compelled to scroll.
-2. **THE WORLD (Context)** — As user scrolls, the camera orbits the model. Background shifts. Floating text annotations introduce the product/brand philosophy. Parallax layers create depth.
-3. **THE DEEP DIVE (Features)** — Pinned section. Model explodes into components. Each component highlights as text swaps. Progress bar shows journey through features.
+1. **THE HOOK (Hero)** — Full-screen cinematic reveal. The canvas sequence begins from darkness. Title characters flip in one by one. The user is compelled to scroll.
+2. **THE WORLD (Context)** — As user scrolls, the canvas sequence orbits the product. Background shifts. Floating text annotations introduce the product/brand philosophy. Parallax layers create depth.
+3. **THE DEEP DIVE (Features)** — Pinned section. The canvas sequence shows the product exploding into components. Each component highlights as text swaps. Progress bar shows journey through features.
 4. **THE SHOWCASE (Gallery)** — Horizontal scroll panel. Multiple angles/variants/use-cases slide laterally. Each panel has its own parallax micro-world.
 5. **THE PROOF (Social/Stats)** — Numbers count up on scroll (GSAP countTo). Testimonial cards enter with clip-path reveals. Glass-card treatment.
-6. **THE CALL (CTA)** — Full-screen cinematic video. Model reassembles in full glory. Strong CTA with magnetic button effect.
-7. **THE CLOSE (Footer)** — Minimal, elegant. Brand signature. Model shrinks to thumbnail in corner.
+6. **THE CALL (CTA)** — Full-screen cinematic video or final canvas sequence frame. Product reassembles in full glory. Strong CTA with magnetic button effect.
+7. **THE CLOSE (Footer)** — Minimal, elegant. Brand signature.
 
 ## ADDITIONAL RULES:
 - The user's additional details box may contain random context. Intelligently extract and place each piece into the appropriate layer.
 - NEVER use generic placeholder text. Use the actual brand name and tagline.
-- If the user provided custom animation names, define those with GSAP/Framer Motion/Three.js code snippets.
-- This brief is for UI/UX DESIGN screens — but the specifications must be precise enough to code directly with Three.js + GSAP.
+- If the user provided custom animation names, define those with GSAP/Framer Motion code snippets.
+- This brief is for UI/UX DESIGN screens — but the specifications must be precise enough to code directly with HTML5 Canvas + GSAP.
 - Think of yourself as the creative director of an Awwwards Site of the Year + FWA submission. You are designing a $50,000 premium agency website. Generic fade-ins and simple grids are UNACCEPTABLE.
 - Every section must have at least ONE "wow moment" that would make a designer screenshot it.
 `;
