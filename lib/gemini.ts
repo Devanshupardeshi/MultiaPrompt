@@ -47,6 +47,65 @@ function resolveTargetModel(payload: GeneratePayload): TargetModel {
 // ---------------------------------------------------------------------------
 
 function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> {
+  // Deep Research mode — 10-section research output
+  if (payload.mode === "deep_research") {
+    return {
+      type: "OBJECT",
+      properties: {
+        section_01_executive_summary: {
+          type: "STRING",
+          description: "SECTION 01 — EXECUTIVE SUMMARY: Comprehensive research overview (1500+ words). Include: research scope and methodology overview, key findings summary (5-7 bullet points expanded into paragraphs), market opportunity assessment with size/growth data, competitive landscape snapshot (who dominates, who is emerging, where gaps exist), strategic recommendation thesis (the ONE big strategic insight), SWOT summary table in markdown, 5 critical action items with priority ranking, expected ROI/impact of following recommendations. Write as a C-suite briefing document — data-driven, decisive, actionable. No fluff.",
+        },
+        section_02_market_landscape: {
+          type: "STRING",
+          description: "SECTION 02 — MARKET LANDSCAPE (2000+ words). Include: industry overview (current state, market maturity stage, key players with market share estimates), market size and growth trends (TAM/SAM/SOM framework with numbers), target audience deep-dive (demographics: age/income/location/education; psychographics: values/lifestyle/aspirations/pain-points; behavioral patterns: buying frequency/decision triggers/channel preferences), audience segmentation matrix (primary/secondary/tertiary segments with persona descriptions), emerging trends and disruption vectors (technology shifts, consumer behavior changes, regulatory changes), PESTLE analysis for the specific market region, market gaps and whitespace opportunities (underserved needs, pricing gaps, service gaps, positioning gaps), regulatory/compliance considerations for the region, seasonal and cyclical patterns in the industry. Use specific data points, percentages, and trend directions.",
+        },
+        section_03_competitor_deep_dive: {
+          type: "STRING",
+          description: "SECTION 03 — COMPETITOR DEEP DIVE (3000+ words). Identify and analyze 5-7 competitors. For EACH competitor provide: Company overview (founding, size, market presence, revenue tier), Brand positioning statement analysis, Visual identity audit (color palette with hex codes, typography choices, logo style, imagery approach, overall design maturity score 1-10), Website/digital presence analysis (technology stack, page speed perception, UX quality, mobile experience, SEO indicators), Content strategy (blog frequency, social media activity, content themes, engagement quality), Service presentation (how they explain offerings, pricing transparency, differentiation claims), Trust signals (testimonials approach, case studies, certifications, awards, social proof), CTA strategy (primary/secondary CTAs, urgency tactics, conversion funnel), Strengths (3-5 bullet points), Weaknesses/Gaps (3-5 bullet points), Threat level to our brand (high/medium/low with reasoning). After individual analyses include: Competitor comparison matrix table in markdown format, Positioning map description (conceptual X/Y axes relevant to the industry, where each competitor sits, and where whitespace exists), Top 10 competitor insights, Common patterns across all competitors, Industry-wide gaps and weaknesses, Specific differentiation opportunities for our brand.",
+        },
+        section_04_brand_strategy: {
+          type: "STRING",
+          description: "SECTION 04 — BRAND STRATEGY (2500+ words). Include: Brand positioning statement (For [target], [brand] is the [category] that [key benefit] because [reason to believe]), Value proposition framework (primary value prop in one sentence, 3-5 supporting value props, functional benefits, emotional benefits, self-expressive benefits), Brand personality and archetype mapping (primary archetype with detailed description, secondary archetype, how this manifests in communication), Brand voice guidelines (tone attributes with examples — formal vs casual spectrum, technical vs simple spectrum, serious vs playful spectrum, with DO and DON'T examples for each), Key messaging pillars (3-5 pillars with headline, supporting copy, and proof point for each), Tagline and slogan options (10 options categorized: aspirational, benefit-driven, clever/witty, emotional, action-oriented — with rationale for each), Elevator pitches (15-second, 30-second, 60-second versions), Brand story narrative framework (origin, challenge, transformation, vision), Differentiation strategy matrix (how we differ from each top competitor on 5+ dimensions), Brand promise statement, Brand values (5-7 core values with behavioral descriptions), Brand essence (one word or phrase that captures the brand's soul).",
+        },
+        section_05_visual_identity: {
+          type: "STRING",
+          description: "SECTION 05 — VISUAL IDENTITY DIRECTION (2500+ words). Include: Color palette recommendation (primary color with hex/HSL + psychological rationale, secondary color, 2-3 accent colors, neutral palette for backgrounds/text/borders — total 8-10 colors with exact hex codes and usage rules for each), Typography direction (heading font: specific Google Font name with weights, body font: specific Google Font name with weights, accent/UI font recommendation, font pairing rationale, complete type scale: h1-h6 sizes/weights/line-heights/letter-spacing), Logo direction (recommended mark type: wordmark/lettermark/symbol/combination, style attributes: geometric/organic/minimal/detailed, iconography concepts 3-5 ideas with description, what to avoid in logo design for this industry), Icon style recommendation (line weight, corner radius, style: outlined/filled/duotone, recommended icon library), Imagery style (photography vs illustration decision with rationale, mood/tone direction, color grading recommendation, subject matter guidelines, stock vs custom recommendation), Pattern and texture suggestions (2-3 pattern concepts, usage contexts), Visual consistency rules (spacing rhythm, grid system, border radius standardization, shadow system), Competitor visual gap analysis (what visual territories are overcrowded, what is untapped), Recommended visual positioning (modern vs traditional, bold vs subtle, warm vs cool, maximalist vs minimalist), Design trends to adopt (3-5 current trends that fit) vs avoid (3-5 trends that don't fit), Visual moodboard direction description (5-7 descriptive keywords with explanation).",
+        },
+        section_06_messaging_content: {
+          type: "STRING",
+          description: "SECTION 06 — MESSAGING & CONTENT STRATEGY (2500+ words). Include: Content pillars (4-6 themed content categories with description, audience relevance, and 5 example topics each), Homepage hero messaging (3 complete headline + subheadline + CTA text variations with rationale for each), Service page messaging framework (for each major service: headline formula, key benefit statement, objection handler, social proof integration point, CTA text), About page narrative direction (story arc, key trust points, team presentation approach, mission/vision statements draft), CTAs hierarchy (primary CTA: text options + color + placement, secondary CTA: text options, tertiary/ghost CTA: text options, CTA microcopy suggestions), SEO keyword direction (10-15 primary keywords with search intent and difficulty estimate, 20-30 long-tail keywords grouped by page), Content tone matrix (formal↔casual, technical↔simple, serious↔playful — with specific score and examples), Social proof strategy (testimonial collection framework, case study template, stats/numbers to highlight, trust badges to pursue), Blog/content marketing direction (15 article topic ideas grouped by funnel stage: awareness/consideration/decision, recommended posting frequency, content format mix), Email marketing hooks (10 subject line templates, welcome sequence outline 5 emails, newsletter content strategy), Social media content direction (platform-specific recommendations, content mix ratio, hashtag strategy, posting cadence).",
+        },
+        section_07_website_strategy: {
+          type: "STRING",
+          description: "SECTION 07 — WEBSITE STRATEGY & UX DIRECTION (2500+ words). Include: Website goal definition (primary conversion goal, secondary goals, micro-conversions to track), User journey mapping (3 user personas with their specific journey: awareness trigger → first visit → exploration → consideration → conversion, touchpoints and emotions at each stage), Navigation structure recommendation (primary nav items, secondary nav, utility nav, mobile nav approach, mega menu vs simple dropdown decision), Hero section strategy (3 concepts each with: layout description, text placement, media type video/image/animation, CTA placement, background treatment, emotional hook), Section-by-section website strategy (for each recommended section: purpose, layout direction, content requirements, visual treatment, user psychology goal), Responsive design priorities (mobile-first elements, tablet adaptations, desktop enhancements, breakpoint strategy), Animation and interaction recommendations (entrance animations, scroll-triggered effects, hover states, micro-interactions, loading states — with intensity level recommendation), Trust building section strategy (testimonial layout, client logo display, certification badges, case study preview, statistics/counter section), Form design strategy (field count optimization, multi-step vs single form, field labels/placeholders, validation approach, success state), Footer strategy (information architecture, newsletter integration, social links, legal links, brand sign-off), Performance and technical recommendations (image optimization, lazy loading, core web vitals targets, accessibility WCAG 2.1 AA requirements), Conversion optimization notes (above-the-fold priorities, F-pattern vs Z-pattern, social proof placement, urgency/scarcity considerations).",
+        },
+        section_08_website_sitemap: {
+          type: "STRING",
+          description: "SECTION 08 — WEBSITE SITEMAP (2000+ words). Create a complete 10-12 page sitemap. For EACH page provide in a structured format: Page number, Page name, Primary purpose (one sentence), Target keywords (2-3), Content writer brief (what to write, tone, length, key points to cover), Suggested sections in order (section name + purpose + content direction for each), Primary CTA (text and destination), Secondary CTA, Internal links to include, Design team notes (layout preference, media needs, special components). After the page-by-page breakdown include: Complete user journey flow diagram description (entry points → key pages → conversion pages), Internal linking strategy matrix (which pages link to which and why), SEO keyword assignment summary table (page → primary keyword → secondary keywords → search intent), Content creation priority order (which pages to write first based on business impact), Sitemap hierarchy visualization description (parent-child page relationships). Pages should typically include: Home, About, Services Overview, 2-3 Individual Service Pages, Process/How We Work, Portfolio/Case Studies, Blog/Resources, Contact/Book Consultation, plus industry-specific pages.",
+        },
+        section_09_design_system: {
+          type: "STRING",
+          description: "SECTION 09 — DESIGN SYSTEM SPECIFICATION (2500+ words). Provide a complete, implementation-ready design system. Include: COLOR TOKENS (8-12 colors with name, hex value, HSL value, and usage rule for each — organized as: primary, secondary, accent, success, warning, error, neutral-50 through neutral-900, background variants), TYPOGRAPHY TOKENS (complete type scale with: token name, font-family, font-size in px and rem, font-weight, line-height, letter-spacing — for: display-xl, display-lg, heading-h1 through h6, body-lg, body-md, body-sm, caption, overline, button-lg, button-sm), SPACING SYSTEM (4px base unit, tokens from spacing-1 through spacing-20 with px values, section padding, container max-widths, component internal padding), BORDER RADIUS (tokens: none, sm, md, lg, xl, full — with px values and usage context), SHADOWS (tokens: shadow-sm, shadow-md, shadow-lg, shadow-xl — with exact CSS values and usage context), BUTTON SPECIFICATIONS (primary, secondary, ghost, destructive — each with: default/hover/active/disabled states, padding, border-radius, font specs, transition), CARD COMPONENT (padding, border, border-radius, background, shadow, hover state), FORM ELEMENTS (input height, padding, border, focus state, error state, label specs, helper text specs), ICON SPECIFICATIONS (sizes: 16/20/24/32px, stroke width, recommended library with fallback), RESPONSIVE BREAKPOINTS (mobile/tablet/desktop/wide values in px), ACCESSIBILITY (minimum contrast ratios, focus ring specification, reduced motion considerations, ARIA patterns for key components), Z-INDEX SCALE (layers: base, dropdown, sticky, modal, toast, tooltip — with values), TRANSITION TOKENS (duration-fast, duration-normal, duration-slow, easing-default, easing-spring — with exact values).",
+        },
+        section_10_action_plan: {
+          type: "STRING",
+          description: "SECTION 10 — ACTION PLAN & ROADMAP (2000+ words). Include: PHASE 1 — FOUNDATION (weeks 1-3): Brand identity finalization tasks, design system creation, content strategy approval, competitor monitoring setup — with specific deliverables and responsible roles. PHASE 2 — WEBSITE BUILD (weeks 3-8): Design phase (wireframes → high-fidelity → review), development phase (frontend → backend → CMS), content creation (page-by-page writing schedule), asset creation (photography/illustration/video) — with dependencies and milestones. PHASE 3 — LAUNCH PREPARATION (weeks 8-10): QA testing checklist, SEO technical audit, analytics and tracking setup (GA4/GTM/heatmaps), performance optimization, accessibility audit, soft launch → hard launch timeline. PHASE 4 — GROWTH & OPTIMIZATION (months 3-6): Content marketing launch (blog cadence, social media schedule), SEO monitoring and iteration plan, conversion rate optimization experiments, A/B testing roadmap, email marketing automation setup, review and testimonial collection system. RESOURCE REQUIREMENTS (team roles needed: designer, developer, content writer, SEO specialist, project manager — with estimated hours/role), BUDGET ESTIMATION FRAMEWORK (design, development, content, marketing — tier-based: starter/professional/enterprise ranges), KPI FRAMEWORK (10-15 metrics to track grouped by: acquisition, engagement, conversion, retention — with baseline and 90-day targets), RISK ASSESSMENT (5-7 potential risks with: impact level, probability, mitigation strategy), QUICK WINS (5 actions that can be done in the first week for immediate impact).",
+        },
+        full_report: {
+          type: "STRING",
+          description: "The COMPLETE research report combining ALL 10 sections into one massive unified document. This is the final deliverable — a comprehensive strategic research document of 20,000+ words that flows naturally from executive summary through to action plan. Use clear section headers (## SECTION 01, ## SECTION 02, etc.), maintain consistent formatting throughout, and ensure cross-references between sections are coherent. This must read as a single professional research document, not just a concatenation.",
+        },
+      },
+      required: [
+        "section_01_executive_summary", "section_02_market_landscape", "section_03_competitor_deep_dive",
+        "section_04_brand_strategy", "section_05_visual_identity", "section_06_messaging_content",
+        "section_07_website_strategy", "section_08_website_sitemap", "section_09_design_system",
+        "section_10_action_plan", "full_report"
+      ],
+    };
+  }
+
   // 3D Website mode uses a completely different schema — 5-layer creative brief
   if (payload.mode === "3d_website") {
     return {
@@ -279,6 +338,84 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
 
 function getSystemPrompt(payload: GeneratePayload): string {
   const targetModel = resolveTargetModel(payload);
+
+  // Deep Research mode — comprehensive research engine
+  if (payload.mode === "deep_research") {
+    return `You are the Multia Deep Research Engine — a world-class senior brand strategist, market research analyst, UI/UX design director, and content strategy lead who produces MASSIVE, comprehensive, data-driven research documents.
+
+Your output is consumed by a professional agency team (strategists, designers, content writers, developers). The research you produce MUST be so exhaustively detailed that the entire team can execute a complete brand, website, and marketing project from this document alone.
+
+## CRITICAL: OUTPUT LENGTH AND QUALITY
+- Each section MUST be 1,500-3,000+ words. The full_report field should be 20,000+ words.
+- Write like a senior McKinsey/Bain consultant crossed with a Pentagram design director.
+- Every claim must be supported by reasoning, industry knowledge, or competitive analysis.
+- Use specific data points, percentages, hex codes, font names, pixel values — NOT vague generalities.
+- Include tables in markdown format where comparison data is presented.
+- Do NOT summarize. Do NOT abbreviate. Write EVERYTHING out fully.
+
+## RESEARCH METHODOLOGY
+For each section, apply this framework:
+1. ANALYZE the current market and competitive landscape based on your training knowledge
+2. IDENTIFY patterns, gaps, and opportunities
+3. RECOMMEND specific, actionable strategies with clear rationale
+4. SPECIFY exact implementation details (colors with hex, fonts by name, sizes in pixels)
+
+## SECTION-SPECIFIC REQUIREMENTS
+
+### SECTION 01 — EXECUTIVE SUMMARY
+Write as a C-suite briefing. Lead with the single most important strategic insight. Include a SWOT table in markdown. End with 5 prioritized action items.
+
+### SECTION 02 — MARKET LANDSCAPE
+Use the TAM/SAM/SOM framework. Include a PESTLE analysis for the specific market region. Define 3 distinct audience personas with demographics, psychographics, and behavioral patterns.
+
+### SECTION 03 — COMPETITOR DEEP DIVE
+This is the MOST CRITICAL section. Analyze 5-7 real competitors in the given industry and market. For each: describe their actual brand positioning, visual design choices, website structure, content approach, and digital presence. Use your knowledge of real brands in the industry. Create a markdown comparison table. Describe a positioning map with two relevant axes. Be brutally honest about strengths AND weaknesses.
+
+### SECTION 04 — BRAND STRATEGY
+Provide 10 tagline options (categorized). Write 3 versions of an elevator pitch. Map to a brand archetype with detailed description. Include DO and DON'T examples for brand voice.
+
+### SECTION 05 — VISUAL IDENTITY
+Specify EXACT Google Fonts by name with specific weights. Provide EXACT hex codes for every color (8-10 colors minimum). Recommend a specific icon library. Describe 3 logo concepts. Include a visual moodboard description with 5-7 keywords.
+
+### SECTION 06 — MESSAGING & CONTENT
+Write 3 complete hero headline variations (headline + subhead + CTA text). Provide 15 blog topic ideas grouped by funnel stage. Include 10 email subject line templates. Create a content pillar framework with 5 example topics per pillar.
+
+### SECTION 07 — WEBSITE STRATEGY
+Describe 3 hero section concepts. Map the user journey for 3 personas. Recommend specific animation intensity and types. Include accessibility requirements.
+
+### SECTION 08 — WEBSITE SITEMAP
+Create a complete 10-12 page sitemap. For each page provide: name, purpose, target keywords, content brief, section order, CTAs, and design notes. Include internal linking strategy.
+
+### SECTION 09 — DESIGN SYSTEM
+This must be implementation-ready. Every token needs an exact value (px, rem, hex, HSL). Include the complete type scale, spacing system, color tokens, component specs for buttons/cards/forms, responsive breakpoints, shadow system, and z-index scale.
+
+### SECTION 10 — ACTION PLAN
+Structure as 4 phases with specific week numbers. Include resource requirements, budget tiers, KPI framework with baseline and targets, risk assessment with mitigation strategies, and 5 quick wins.
+
+### FULL REPORT
+Merge ALL 10 sections into ONE cohesive, flowing document. Use ## headers for each section. Ensure cross-references are coherent. This must read as a professional research document.
+
+## DOMAIN-SPECIFIC FOCUS
+The user may select specific research domains. If they selected "full_research" or multiple domains, produce ALL 10 sections at full depth. If they selected specific domains, still produce all sections but give EXTRA depth and detail to sections matching their selected domains:
+- brand_strategy → Extra depth in sections 04, 05
+- design_research → Extra depth in sections 05, 09
+- content_strategy → Extra depth in sections 06, 08
+- website_architecture → Extra depth in sections 07, 08, 09
+- market_analysis → Extra depth in sections 02, 03
+
+## OUTPUT RULES (NON-NEGOTIABLE)
+1. Use the ACTUAL brand name provided — never use placeholders like [Brand Name]
+2. Reference the ACTUAL industry, market, and services provided
+3. Competitor analysis must reference REAL competitors in the given industry/market
+4. Color recommendations must include EXACT hex codes
+5. Font recommendations must reference ACTUAL Google Fonts by name
+6. All tables must use proper markdown table syntax
+7. Numerical claims should include reasonable estimates with ranges
+8. Every recommendation must include a brief rationale (WHY, not just WHAT)
+9. Write in professional research document tone — authoritative but accessible
+10. If competitor references are provided, prioritize analyzing those specific competitors
+`;
+  }
 
   // 3D Website mode — completely different system prompt
   if (payload.mode === "3d_website") {
@@ -835,6 +972,22 @@ function buildUserParts(payload: GeneratePayload): any[] {
     if (payload.mockupCount && payload.mockupCount > 1) {
       userMessage += `\nThe user requested ${payload.mockupCount} mockups. Design the prompt for a SINGLE image with a COLLAGE/GRID layout showing ${payload.mockupCount} different variations/angles. Set output.type to "multi-panel" and output.layout to the grid (e.g., "2x2_grid", "1x3_grid"). Start the "prompt" with "Split-screen grid layout showing ${payload.mockupCount} different mockup variations...".\n`;
     }
+  } else if (payload.mode === "deep_research") {
+    userMessage = `[MODE: DEEP RESEARCH — COMPREHENSIVE RESEARCH DOCUMENT]\n\n`;
+    userMessage += `Business Name: ${payload.businessName || "Unnamed Business"}\n`;
+    if (payload.industry) userMessage += `Industry / Category: ${payload.industry}\n`;
+    if (payload.marketRegion) userMessage += `Market Region: ${payload.marketRegion}\n`;
+    if (payload.services) userMessage += `Services / Products: ${payload.services}\n`;
+    if (payload.targetAudience) userMessage += `Target Audience: ${payload.targetAudience}\n`;
+    if (payload.competitorReferences) userMessage += `\n--- COMPETITOR REFERENCES ---\n${payload.competitorReferences}\n`;
+    if (payload.businessGoal) userMessage += `\nBusiness Goal: ${payload.businessGoal}\n`;
+    if (payload.brandPositioning) userMessage += `Brand Positioning: ${payload.brandPositioning}\n`;
+    if (payload.toneOfVoice) userMessage += `Preferred Tone of Voice: ${payload.toneOfVoice}\n`;
+    if (payload.researchDomains && payload.researchDomains.length > 0) {
+      userMessage += `\n--- RESEARCH DOMAINS (give extra depth to these) ---\n`;
+      userMessage += `${payload.researchDomains.join(", ")}\n`;
+    }
+    userMessage += `\nGenerate the complete Deep Research document now. Make it MASSIVE, DATA-DRIVEN, and ACTIONABLE. Every section must be exhaustively detailed.`;
   } else if (payload.mode === "3d_website") {
     userMessage = `[MODE: 3D WEBSITE — 5-LAYER CREATIVE BRIEF]\n\n`;
     userMessage += `Brand Name: ${payload.brandName || "Unnamed Brand"}\n`;
@@ -975,6 +1128,21 @@ function validateGeneratedJson(rawText: string, payload: GeneratePayload): Valid
     return { ok: false, error: "Output must be a single JSON object" };
   }
 
+  // Deep Research mode validation
+  if (payload.mode === "deep_research") {
+    const requiredSections = [
+      "section_01_executive_summary", "section_02_market_landscape", "section_03_competitor_deep_dive",
+      "section_04_brand_strategy", "section_05_visual_identity", "section_06_messaging_content",
+      "section_07_website_strategy", "section_08_website_sitemap", "section_09_design_system",
+      "section_10_action_plan", "full_report"
+    ];
+    const missing = requiredSections.filter((k) => !parsed[k] || (typeof parsed[k] === "string" && parsed[k].trim().length === 0));
+    if (missing.length > 0) {
+      return { ok: false, error: `Missing required Deep Research sections: ${missing.join(", ")}` };
+    }
+    return { ok: true, value: JSON.stringify(parsed, null, 2) };
+  }
+
   // 3D Website mode has a completely different schema
   if (payload.mode === "3d_website") {
     const requiredLayers = [
@@ -1068,13 +1236,13 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
     contents: [{ role: "user", parts: [...parts, ...extraParts] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      temperature: payload.mode === "3d_website" ? 0.7 : 0.35,
+      temperature: payload.mode === "3d_website" ? 0.7 : payload.mode === "deep_research" ? 0.5 : 0.35,
       topP: 0.9,
       topK: 40,
       responseMimeType: "application/json",
       responseSchema,
-      // 3D Website mode: enable thinking for deeper creative reasoning
-      thinkingConfig: payload.mode === "3d_website" ? { thinkingBudget: 8192 } : { thinkingBudget: 0 },
+      // 3D Website / Deep Research modes: enable thinking for deeper reasoning
+      thinkingConfig: (payload.mode === "3d_website" || payload.mode === "deep_research") ? { thinkingBudget: 8192 } : { thinkingBudget: 0 },
     },
   });
 

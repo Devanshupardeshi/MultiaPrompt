@@ -18,7 +18,21 @@ const MOCKUP_TYPES = [
   { id: "billboard", label: "Billboard / OOH" },
 ];
 
-export type GenerationMode = "standard" | "face_swap" | "mockup" | "3d_website";
+const RESEARCH_DOMAINS = [
+  { id: "brand_strategy", label: "Brand Strategy", icon: "🎯" },
+  { id: "design_research", label: "Design Research", icon: "🎨" },
+  { id: "content_strategy", label: "Content Strategy", icon: "✍️" },
+  { id: "website_architecture", label: "Website Architecture", icon: "💻" },
+  { id: "market_analysis", label: "Market Analysis", icon: "🌍" },
+  { id: "full_research", label: "Full Research", icon: "📊" },
+];
+
+const TONE_PRESETS = [
+  "Professional", "Casual", "Bold", "Warm", "Playful",
+  "Luxury", "Technical", "Friendly", "Authoritative", "Minimal",
+];
+
+export type GenerationMode = "standard" | "face_swap" | "mockup" | "3d_website" | "deep_research";
 
 export interface GeneratePayload {
   mode: GenerationMode;
@@ -53,6 +67,17 @@ export interface GeneratePayload {
   animationNames?: string;
   additionalDetails?: string;
   designMdContent?: string;
+  // Deep Research mode fields
+  businessName?: string;
+  industry?: string;
+  marketRegion?: string;
+  services?: string;
+  competitorReferences?: string;
+  researchDomains?: string[];
+  targetAudience?: string;
+  businessGoal?: string;
+  brandPositioning?: string;
+  toneOfVoice?: string;
 }
 
 export interface CustomStyle {
@@ -172,6 +197,18 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [designMdContent, setDesignMdContent] = useState("");
   const [designMdFileName, setDesignMdFileName] = useState("");
+
+  // Deep Research specific
+  const [businessName, setBusinessName] = useState("");
+  const [researchIndustry, setResearchIndustry] = useState("");
+  const [marketRegion, setMarketRegion] = useState("");
+  const [researchServices, setResearchServices] = useState("");
+  const [competitorReferences, setCompetitorReferences] = useState("");
+  const [researchDomains, setResearchDomains] = useState<string[]>(["full_research"]);
+  const [researchTargetAudience, setResearchTargetAudience] = useState("");
+  const [researchBusinessGoal, setResearchBusinessGoal] = useState("");
+  const [researchBrandPositioning, setResearchBrandPositioning] = useState("");
+  const [researchTone, setResearchTone] = useState("");
 
   // Parse DESIGN.md YAML frontmatter and auto-fill form fields
   const handleDesignMdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,6 +363,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
     if (mode === "face_swap") return sourceFaceImage !== null && targetPoseImage !== null;
     if (mode === "mockup") return logoImage !== null && (mockupReferenceImage !== null || logoDescription.trim().length > 0);
     if (mode === "3d_website") return brandName.trim().length > 0;
+    if (mode === "deep_research") return businessName.trim().length > 0;
     return false;
   };
 
@@ -375,6 +413,17 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       animationNames: animationNames.trim() || undefined,
       additionalDetails: additionalDetails.trim() || undefined,
       designMdContent: designMdContent.trim() || undefined,
+      // Deep Research fields
+      businessName: businessName.trim() || undefined,
+      industry: researchIndustry.trim() || undefined,
+      marketRegion: marketRegion.trim() || undefined,
+      services: researchServices.trim() || undefined,
+      competitorReferences: competitorReferences.trim() || undefined,
+      researchDomains: researchDomains.length > 0 ? researchDomains : undefined,
+      targetAudience: researchTargetAudience.trim() || undefined,
+      businessGoal: researchBusinessGoal.trim() || undefined,
+      brandPositioning: researchBrandPositioning.trim() || undefined,
+      toneOfVoice: researchTone.trim() || undefined,
     });
   };
 
@@ -384,7 +433,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
         
         {/* Mode Selector */}
         <div className="flex flex-wrap gap-2 mb-8 p-1 bg-white/5 rounded-lg w-max border border-white/10">
-          {(["standard", "face_swap", "mockup", "3d_website"] as GenerationMode[]).map((m) => (
+          {(["standard", "face_swap", "mockup", "3d_website", "deep_research"] as GenerationMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -392,7 +441,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                 mode === m ? "bg-white text-black" : "text-white/50 hover:text-white"
               }`}
             >
-              {m === "3d_website" ? "3D Website" : m.replace("_", " ")}
+              {m === "3d_website" ? "3D Website" : m === "deep_research" ? "Deep Research" : m.replace("_", " ")}
             </button>
           ))}
         </div>
@@ -767,8 +816,115 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
               </div>
             </div>
           )}
-          {/* Visual style picker (Multi-select) — hidden for 3D Website mode */}
-          {mode !== "3d_website" && <div className="mb-8">
+
+          {mode === "deep_research" && (
+            <div className="mb-6 space-y-6">
+              {/* Row 1: Business Name + Industry */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Business Name (Required)</label>
+                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g., Bak'd, TechFlow, Zenith Studios" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Industry / Category</label>
+                  <input type="text" value={researchIndustry} onChange={(e) => setResearchIndustry(e.target.value)} placeholder="e.g., Bakery, SaaS, Fashion, Healthcare" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* Row 2: Market Region + Target Audience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Market Region</label>
+                  <input type="text" value={marketRegion} onChange={(e) => setMarketRegion(e.target.value)} placeholder="e.g., Mumbai India, North America, Global" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Target Audience (Optional)</label>
+                  <input type="text" value={researchTargetAudience} onChange={(e) => setResearchTargetAudience(e.target.value)} placeholder="e.g., B2B enterprises, Gen-Z consumers, Health-conscious millennials" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* Services */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Services / Products</label>
+                <textarea value={researchServices} onChange={(e) => setResearchServices(e.target.value)} placeholder="List your main services or products. e.g., Custom cakes, pastries, celebration cakes, bulk gifting, catering..." rows={3} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Competitor References */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Competitor References (Optional)</label>
+                <textarea value={competitorReferences} onChange={(e) => setCompetitorReferences(e.target.value)} placeholder="Competitor websites, brand names, or references you like. e.g., Theobroma, Iyengar Bakery, www.competitor.com..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Research Domains */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Research Domains</label>
+                <div className="flex flex-wrap gap-2">
+                  {RESEARCH_DOMAINS.map(domain => (
+                    <button
+                      key={domain.id}
+                      onClick={() => {
+                        if (domain.id === "full_research") {
+                          setResearchDomains(["full_research"]);
+                        } else {
+                          setResearchDomains(prev => {
+                            const without = prev.filter(d => d !== "full_research");
+                            return without.includes(domain.id)
+                              ? without.filter(d => d !== domain.id)
+                              : [...without, domain.id];
+                          });
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs transition-colors border flex items-center gap-1.5 ${
+                        researchDomains.includes(domain.id)
+                          ? "bg-white text-black border-white"
+                          : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                      }`}
+                    >
+                      <span>{domain.icon}</span>
+                      {domain.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-white/20 mt-2 font-body">Select specific research areas or &quot;Full Research&quot; for all sections</p>
+              </div>
+
+              {/* Business Goal */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Business Goal (Optional)</label>
+                <textarea value={researchBusinessGoal} onChange={(e) => setResearchBusinessGoal(e.target.value)} placeholder="e.g., Increase walk-ins and online orders, build brand awareness, generate B2B leads..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Brand Positioning */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Brand Positioning (Optional)</label>
+                <textarea value={researchBrandPositioning} onChange={(e) => setResearchBrandPositioning(e.target.value)} placeholder="How should the brand be perceived? e.g., Fresh, comforting, premium quality with warm neighborhood appeal..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Tone of Voice */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Tone of Voice (Optional)</label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {TONE_PRESETS.map(tone => (
+                    <button
+                      key={tone}
+                      onClick={() => setResearchTone(prev => prev === tone ? "" : tone)}
+                      className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                        researchTone === tone
+                          ? "bg-white text-black border-white"
+                          : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                      }`}
+                    >
+                      {tone}
+                    </button>
+                  ))}
+                </div>
+                <input type="text" value={researchTone} onChange={(e) => setResearchTone(e.target.value)} placeholder="Or type a custom tone..." className="input-multia w-full px-4 py-2 text-sm" />
+              </div>
+            </div>
+          )}
+
+          {/* Visual style picker (Multi-select) — hidden for 3D Website and Deep Research modes */}
+          {mode !== "3d_website" && mode !== "deep_research" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Styles (Select Multiple)</label>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {STYLE_PRESETS.map((style) => (
@@ -841,8 +997,8 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             {styleError && <p className="text-xs text-red-400 mt-2 font-body">{styleError}</p>}
           </div>}
 
-          {/* Target image model selector — hidden for 3D Website mode */}
-          {mode !== "3d_website" && <div className="mb-8">
+          {/* Target image model selector — hidden for 3D Website and Deep Research modes */}
+          {mode !== "3d_website" && mode !== "deep_research" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Image Model</label>
             <div className="flex gap-2">
               {([["nano-banana-pro", "Nano Banana Pro"], ["gpt-image", "GPT Image"]] as const).map(([id, label]) => (

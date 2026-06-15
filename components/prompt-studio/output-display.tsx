@@ -376,6 +376,134 @@ export function OutputDisplay({
             </div>
           );
         })()}
+
+        {/* Deep Research — 10-Section Research output */}
+        {json && !isLoading && mode === "deep_research" && (() => {
+          let parsed: any = {};
+          try { parsed = JSON.parse(json); } catch { parsed = {}; }
+          const sections = [
+            { key: "section_01_executive_summary", label: "Executive Summary",  },
+            { key: "section_02_market_landscape", label: "Market Landscape", },
+            { key: "section_03_competitor_deep_dive", label: "Competitor Deep Dive", },
+            { key: "section_04_brand_strategy", label: "Brand Strategy", },
+            { key: "section_05_visual_identity", label: "Visual Identity",  },
+            { key: "section_06_messaging_content", label: "Messaging & Content", },
+            { key: "section_07_website_strategy", label: "Website Strategy", },
+            { key: "section_08_website_sitemap", label: "Website Sitemap",  },
+            { key: "section_09_design_system", label: "Design System", },
+            { key: "section_10_action_plan", label: "Action Plan", },
+            { key: "full_report", label: "Full Report",  },
+          ];
+
+          const handleCopySection = async (text: string) => {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }
+          };
+
+          const handleDownloadReport = () => {
+            const reportText = parsed.full_report || Object.entries(parsed)
+              .filter(([k]) => k.startsWith("section_"))
+              .map(([, v]) => v)
+              .join("\n\n---\n\n");
+            const blob = new Blob([reportText], { type: "text/markdown" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `research-report-${Date.now()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+
+          return (
+            <div className="space-y-4">
+              {/* Section tabs — scrollable */}
+              <div className="flex flex-wrap gap-1.5 p-1 bg-white/5 rounded-lg border border-white/10">
+                {sections.map((section, i) => (
+                  <button
+                    key={section.key}
+                    onClick={() => setActiveLayer(i)}
+                    className={`px-2.5 py-2 text-[10px] font-body uppercase tracking-wider rounded transition-colors flex items-center gap-1 ${
+                      activeLayer === i ? "bg-white text-black" : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span className="text-xs">{section.icon}</span>
+                    <span className="hidden sm:inline">{section.label}</span>
+                    <span className="sm:hidden">{section.label.split(" ")[0]}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active section content */}
+              <div className="code-block">
+                <div className="code-block-header">
+                  <span className="text-xs text-white/40 font-body flex items-center gap-2">
+                    <span>{sections[activeLayer]?.icon}</span>
+                    {sections[activeLayer]?.label}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleCopySection(parsed[sections[activeLayer]?.key] || "")}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
+                    >
+                      {copied ? "Copied!" : "Copy Section"}
+                    </button>
+                    <button
+                      onClick={() => handleCopySection(parsed.full_report || "")}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
+                    >
+                      📄 Copy Full Report
+                    </button>
+                    <button
+                      onClick={handleDownloadReport}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
+                    >
+                      ⬇ Download .md
+                    </button>
+                  </div>
+                </div>
+
+                <div className="code-block-body custom-scrollbar max-h-[700px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
+                    {parsed[sections[activeLayer]?.key] || "No content generated for this section."}
+                  </pre>
+                </div>
+
+                <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[11px] text-white/15 font-body">
+                    Section {activeLayer + 1} of {sections.length}
+                    {parsed[sections[activeLayer]?.key] && (
+                      <> · {parsed[sections[activeLayer]?.key].length.toLocaleString()} chars</>
+                    )}
+                  </span>
+                  <button
+                    onClick={onRegenerate}
+                    className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    Regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </section>
   );

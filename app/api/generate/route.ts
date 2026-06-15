@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     if (payload.mode === "3d_website" && (!payload.brandName || !payload.brandName.trim())) {
       return NextResponse.json({ error: "Brand name is required for 3D Website mode" }, { status: 400 });
     }
+    if (payload.mode === "deep_research" && (!payload.businessName || !payload.businessName.trim())) {
+      return NextResponse.json({ error: "Business name is required for Deep Research mode" }, { status: 400 });
+    }
 
     const result = await generatePrompt(payload);
 
