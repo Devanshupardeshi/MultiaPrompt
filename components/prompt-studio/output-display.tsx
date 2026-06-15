@@ -381,7 +381,7 @@ export function OutputDisplay({
         {json && !isLoading && mode === "deep_research" && (() => {
           let parsed: any = {};
           try { parsed = JSON.parse(json); } catch { parsed = {}; }
-          const sections = [
+          const sectionDefs = [
             { key: "section_01_executive_summary", label: "Executive Summary" },
             { key: "section_02_market_landscape", label: "Market Landscape" },
             { key: "section_03_competitor_deep_dive", label: "Competitor Deep Dive" },
@@ -392,8 +392,8 @@ export function OutputDisplay({
             { key: "section_08_website_sitemap", label: "Website Sitemap" },
             { key: "section_09_design_system", label: "Design System" },
             { key: "section_10_action_plan", label: "Action Plan" },
-            { key: "full_report", label: "Full Report" },
           ];
+          const sections = [...sectionDefs, { key: "full_report", label: "Full Report" }];
 
           // Helper: format sub-field key to readable label
           const formatSubKey = (key: string) =>
@@ -401,6 +401,12 @@ export function OutputDisplay({
 
           // Helper: get section content as flat text for copying
           const getSectionText = (sectionKey: string): string => {
+            // Full report = client-side merge of all sections
+            if (sectionKey === "full_report") {
+              return sectionDefs
+                .map((s) => `## ${s.label}\n\n${getSectionText(s.key)}`)
+                .join("\n\n---\n\n");
+            }
             const data = parsed[sectionKey];
             if (!data) return "";
             if (typeof data === "string") return data;

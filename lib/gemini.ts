@@ -209,16 +209,12 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
           },
           required: ["phase_1_foundation", "phase_2_website", "phase_3_launch", "phase_4_growth", "resource_requirements", "budget_framework", "kpi_framework", "risk_assessment", "quick_wins"],
         },
-        full_report: {
-          type: "STRING",
-          description: "COMPLETE research report merging ALL 10 sections into one massive document (20,000+ words). Use ## headers for sections, ### for sub-sections. Include all data, tables, hex codes, font names from every section. Must read as a single professional document.",
-        },
       },
       required: [
         "section_01_executive_summary", "section_02_market_landscape", "section_03_competitor_deep_dive",
         "section_04_brand_strategy", "section_05_visual_identity", "section_06_messaging_content",
         "section_07_website_strategy", "section_08_website_sitemap", "section_09_design_system",
-        "section_10_action_plan", "full_report"
+        "section_10_action_plan"
       ],
     };
   }
@@ -1257,7 +1253,7 @@ function validateGeneratedJson(rawText: string, payload: GeneratePayload): Valid
     return { ok: false, error: "Output must be a single JSON object" };
   }
 
-  // Deep Research mode validation — sections are nested objects, full_report is string
+  // Deep Research mode validation — sections are nested objects, full_report is assembled client-side
   if (payload.mode === "deep_research") {
     const requiredSections = [
       "section_01_executive_summary", "section_02_market_landscape", "section_03_competitor_deep_dive",
@@ -1268,9 +1264,6 @@ function validateGeneratedJson(rawText: string, payload: GeneratePayload): Valid
     const missing = requiredSections.filter((k) => !parsed[k] || typeof parsed[k] !== "object");
     if (missing.length > 0) {
       return { ok: false, error: `Missing required Deep Research sections: ${missing.join(", ")}` };
-    }
-    if (!parsed.full_report || (typeof parsed.full_report === "string" && parsed.full_report.trim().length === 0)) {
-      return { ok: false, error: "Missing required Deep Research full_report" };
     }
     return { ok: true, value: JSON.stringify(parsed, null, 2) };
   }
@@ -1373,8 +1366,8 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
       topK: 40,
       responseMimeType: "application/json",
       responseSchema,
-      // 3D Website / Deep Research modes: enable thinking for deeper reasoning
-      thinkingConfig: (payload.mode === "3d_website" || payload.mode === "deep_research") ? { thinkingBudget: 8192 } : { thinkingBudget: 0 },
+      // 3D Website: full thinking budget. Deep Research: moderate thinking for speed.
+      thinkingConfig: payload.mode === "3d_website" ? { thinkingBudget: 8192 } : payload.mode === "deep_research" ? { thinkingBudget: 4096 } : { thinkingBudget: 0 },
     },
   });
 
