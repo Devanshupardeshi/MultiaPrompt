@@ -1350,6 +1350,11 @@ export async function enhanceDescription(description: string): Promise<string> {
 }
 
 export async function generatePrompt(payload: GeneratePayload): Promise<string> {
+  // Deep Research: parallel generation — 10 concurrent API calls instead of 1 massive one
+  if (payload.mode === "deep_research") {
+    return generateDeepResearchParallel(payload);
+  }
+
   const parts = buildUserParts(payload);
   const systemPrompt = getSystemPrompt(payload);
   const responseSchema = buildResponseSchema(payload);
@@ -1361,13 +1366,12 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
     contents: [{ role: "user", parts: [...parts, ...extraParts] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      temperature: payload.mode === "3d_website" ? 0.7 : payload.mode === "deep_research" ? 0.5 : 0.35,
+      temperature: payload.mode === "3d_website" ? 0.7 : 0.35,
       topP: 0.9,
       topK: 40,
       responseMimeType: "application/json",
       responseSchema,
-      // 3D Website: full thinking budget. Deep Research: moderate thinking for speed.
-      thinkingConfig: payload.mode === "3d_website" ? { thinkingBudget: 8192 } : payload.mode === "deep_research" ? { thinkingBudget: 4096 } : { thinkingBudget: 0 },
+      thinkingConfig: payload.mode === "3d_website" ? { thinkingBudget: 8192 } : { thinkingBudget: 0 },
     },
   });
 
@@ -1386,6 +1390,83 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
   if (result.ok && result.value) return result.value;
 
   throw new Error(`Failed to generate a valid JSON prompt after repair retry: ${result.error}`);
+}
+
+// ---------------------------------------------------------------------------
+// Deep Research — parallel generation of all 10 sections simultaneously.
+// Each section gets its own API call with a focused schema, running concurrently.
+// Total time = slowest single section (~20-30s) instead of all sections serial (~3+ min).
+// ---------------------------------------------------------------------------
+
+async function generateDeepResearchParallel(payload: GeneratePayload): Promise<string> {
+  const fullSchema = buildResponseSchema(payload);
+  const properties = (fullSchema as any).properties as Record<string, any>;
+  const systemPrompt = getSystemPrompt(payload);
+  const parts = buildUserParts(payload);
+  const model = "gemini-3.5-flash";
+
+  const sectionKeys = Object.keys(properties);
+
+  console.log(`Deep Research: firing ${sectionKeys.length} parallel API calls...`);
+
+  const results = await Promise.allSettled(
+    sectionKeys.map(async (sectionKey) => {
+      const sectionSchema = {
+        type: "OBJECT",
+        properties: properties[sectionKey].properties,
+        required: properties[sectionKey].required,
+      };
+
+      const sectionLabel = properties[sectionKey].description || sectionKey;
+
+      const body = {
+        contents: [{
+          role: "user",
+          parts: [
+            ...parts,
+            { text: `\nFOCUS: Generate ONLY the "${sectionLabel}" section. Be exhaustive and data-driven for this specific section.` },
+          ],
+        }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.5,
+          topP: 0.9,
+          topK: 40,
+          responseMimeType: "application/json",
+          responseSchema: sectionSchema,
+          thinkingConfig: { thinkingBudget: 2048 },
+        },
+      };
+
+      const text = await callGemini(body, 0, model);
+      const parsed = JSON.parse(text);
+      return { key: sectionKey, data: parsed };
+    })
+  );
+
+  // Merge all successful results
+  const merged: Record<string, any> = {};
+  const failures: string[] = [];
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      merged[result.value.key] = result.value.data;
+    } else {
+      failures.push(result.reason?.message || "Unknown error");
+    }
+  }
+
+  if (Object.keys(merged).length === 0) {
+    throw new Error(`All parallel research calls failed: ${failures.join("; ")}`);
+  }
+
+  if (failures.length > 0) {
+    console.warn(`Deep Research: ${failures.length} section(s) failed, ${Object.keys(merged).length} succeeded. Failures: ${failures.join("; ")}`);
+  }
+
+  console.log(`Deep Research: ${Object.keys(merged).length}/${sectionKeys.length} sections generated successfully.`);
+
+  return JSON.stringify(merged, null, 2);
 }
 
 // ---------------------------------------------------------------------------
