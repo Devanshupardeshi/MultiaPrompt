@@ -1394,9 +1394,54 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
 
 // ---------------------------------------------------------------------------
 // Deep Research — parallel generation of all 10 sections simultaneously.
-// Each section gets its own API call with a focused schema, running concurrently.
-// Total time = slowest single section (~20-30s) instead of all sections serial (~3+ min).
+// Distributes calls across API keys (max 2 per key) to avoid rate limits.
+// Total time = slowest single section (~20-30s) instead of all serial (~3+ min).
 // ---------------------------------------------------------------------------
+
+// Direct API call with a specific key (no rotation) — used for parallel distribution
+async function callGeminiWithKey(body: Record<string, unknown>, apiKey: string, model = "gemini-3.5-flash"): Promise<string> {
+  const maxRetries = 3;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(GEMINI_URL(apiKey, model), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    // Retry on 429 or 503 with exponential backoff
+    if ((response.status === 429 || response.status === 503) && attempt < maxRetries - 1) {
+      const delayMs = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+      console.log(`Key ...${apiKey.slice(-4)}: ${response.status}, retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries})...`);
+      await sleep(delayMs);
+      continue;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+    }
+
+    const data = await response.json();
+    const candidate = data?.candidates?.[0];
+
+    if (candidate?.finishReason === "MAX_TOKENS") {
+      throw new Error("Response truncated (MAX_TOKENS)");
+    }
+
+    const text = (candidate?.content?.parts ?? [])
+      .map((p: { text?: string }) => p.text ?? "")
+      .join("");
+
+    if (!text.trim()) {
+      throw new Error("No content in response");
+    }
+
+    return text.trim();
+  }
+
+  throw new Error("Max retries exhausted");
+}
 
 async function generateDeepResearchParallel(payload: GeneratePayload): Promise<string> {
   const fullSchema = buildResponseSchema(payload);
@@ -1406,11 +1451,28 @@ async function generateDeepResearchParallel(payload: GeneratePayload): Promise<s
   const model = "gemini-3.5-flash";
 
   const sectionKeys = Object.keys(properties);
+  const keys = getApiKeys();
 
-  console.log(`Deep Research: firing ${sectionKeys.length} parallel API calls...`);
+  if (keys.length === 0) {
+    throw new Error("No Gemini API keys configured.");
+  }
+
+  // Distribute sections across keys: round-robin, max 2 per key
+  const keyAssignments: Array<{ sectionKey: string; apiKey: string }> = sectionKeys.map((sectionKey, i) => ({
+    sectionKey,
+    apiKey: keys[i % keys.length],
+  }));
+
+  // Log distribution
+  const keyCounts: Record<string, number> = {};
+  keyAssignments.forEach(({ apiKey }) => {
+    const short = `...${apiKey.slice(-4)}`;
+    keyCounts[short] = (keyCounts[short] || 0) + 1;
+  });
+  console.log(`Deep Research: ${sectionKeys.length} sections across ${keys.length} keys:`, keyCounts);
 
   const results = await Promise.allSettled(
-    sectionKeys.map(async (sectionKey) => {
+    keyAssignments.map(async ({ sectionKey, apiKey }) => {
       const sectionSchema = {
         type: "OBJECT",
         properties: properties[sectionKey].properties,
@@ -1438,8 +1500,9 @@ async function generateDeepResearchParallel(payload: GeneratePayload): Promise<s
         },
       };
 
-      const text = await callGemini(body, 0, model);
+      const text = await callGeminiWithKey(body, apiKey, model);
       const parsed = JSON.parse(text);
+      console.log(`✓ ${sectionKey} complete (key ...${apiKey.slice(-4)})`);
       return { key: sectionKey, data: parsed };
     })
   );
