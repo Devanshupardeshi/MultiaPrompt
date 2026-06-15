@@ -377,23 +377,40 @@ export function OutputDisplay({
           );
         })()}
 
-        {/* Deep Research — 10-Section Research output */}
+        {/* Deep Research — 10-Section structured JSON output */}
         {json && !isLoading && mode === "deep_research" && (() => {
           let parsed: any = {};
           try { parsed = JSON.parse(json); } catch { parsed = {}; }
           const sections = [
-            { key: "section_01_executive_summary", label: "Executive Summary",  },
-            { key: "section_02_market_landscape", label: "Market Landscape", },
-            { key: "section_03_competitor_deep_dive", label: "Competitor Deep Dive", },
-            { key: "section_04_brand_strategy", label: "Brand Strategy", },
-            { key: "section_05_visual_identity", label: "Visual Identity",  },
-            { key: "section_06_messaging_content", label: "Messaging & Content", },
-            { key: "section_07_website_strategy", label: "Website Strategy", },
-            { key: "section_08_website_sitemap", label: "Website Sitemap",  },
-            { key: "section_09_design_system", label: "Design System", },
-            { key: "section_10_action_plan", label: "Action Plan", },
-            { key: "full_report", label: "Full Report",  },
+            { key: "section_01_executive_summary", label: "Executive Summary" },
+            { key: "section_02_market_landscape", label: "Market Landscape" },
+            { key: "section_03_competitor_deep_dive", label: "Competitor Deep Dive" },
+            { key: "section_04_brand_strategy", label: "Brand Strategy" },
+            { key: "section_05_visual_identity", label: "Visual Identity" },
+            { key: "section_06_messaging_content", label: "Messaging & Content" },
+            { key: "section_07_website_strategy", label: "Website Strategy" },
+            { key: "section_08_website_sitemap", label: "Website Sitemap" },
+            { key: "section_09_design_system", label: "Design System" },
+            { key: "section_10_action_plan", label: "Action Plan" },
+            { key: "full_report", label: "Full Report" },
           ];
+
+          // Helper: format sub-field key to readable label
+          const formatSubKey = (key: string) =>
+            key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+          // Helper: get section content as flat text for copying
+          const getSectionText = (sectionKey: string): string => {
+            const data = parsed[sectionKey];
+            if (!data) return "";
+            if (typeof data === "string") return data;
+            if (typeof data === "object") {
+              return Object.entries(data)
+                .map(([k, v]) => `### ${formatSubKey(k)}\n\n${v}`)
+                .join("\n\n---\n\n");
+            }
+            return String(data);
+          };
 
           const handleCopySection = async (text: string) => {
             try {
@@ -413,10 +430,12 @@ export function OutputDisplay({
           };
 
           const handleDownloadReport = () => {
-            const reportText = parsed.full_report || Object.entries(parsed)
-              .filter(([k]) => k.startsWith("section_"))
-              .map(([, v]) => v)
-              .join("\n\n---\n\n");
+            const reportText = typeof parsed.full_report === "string"
+              ? parsed.full_report
+              : sections
+                  .filter(s => s.key.startsWith("section_"))
+                  .map(s => `## ${s.label}\n\n${getSectionText(s.key)}`)
+                  .join("\n\n---\n\n");
             const blob = new Blob([reportText], { type: "text/markdown" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -427,6 +446,10 @@ export function OutputDisplay({
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           };
+
+          const currentSectionKey = sections[activeLayer]?.key;
+          const currentData = parsed[currentSectionKey];
+          const currentText = getSectionText(currentSectionKey);
 
           return (
             <div className="space-y-4">
@@ -440,7 +463,6 @@ export function OutputDisplay({
                       activeLayer === i ? "bg-white text-black" : "text-white/50 hover:text-white"
                     }`}
                   >
-                    <span className="text-xs">{section.icon}</span>
                     <span className="hidden sm:inline">{section.label}</span>
                     <span className="sm:hidden">{section.label.split(" ")[0]}</span>
                   </button>
@@ -451,18 +473,17 @@ export function OutputDisplay({
               <div className="code-block">
                 <div className="code-block-header">
                   <span className="text-xs text-white/40 font-body flex items-center gap-2">
-                    <span>{sections[activeLayer]?.icon}</span>
                     {sections[activeLayer]?.label}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleCopySection(parsed[sections[activeLayer]?.key] || "")}
+                      onClick={() => handleCopySection(currentText)}
                       className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
                     >
                       {copied ? "Copied!" : "Copy Section"}
                     </button>
                     <button
-                      onClick={() => handleCopySection(parsed.full_report || "")}
+                      onClick={() => handleCopySection(typeof parsed.full_report === "string" ? parsed.full_report : JSON.stringify(parsed, null, 2))}
                       className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
                     >
                       📄 Copy Full Report
@@ -477,16 +498,43 @@ export function OutputDisplay({
                 </div>
 
                 <div className="code-block-body custom-scrollbar max-h-[700px] overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
-                    {parsed[sections[activeLayer]?.key] || "No content generated for this section."}
-                  </pre>
+                  {/* If section is a nested object, render sub-fields */}
+                  {currentData && typeof currentData === "object" ? (
+                    <div className="space-y-6 p-2">
+                      {Object.entries(currentData).map(([subKey, subValue]) => (
+                        <div key={subKey} className="border-b border-white/5 pb-4 last:border-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-[11px] font-body uppercase tracking-wider text-white/50 font-semibold">
+                              {formatSubKey(subKey)}
+                            </h4>
+                            <button
+                              onClick={() => handleCopySection(String(subValue))}
+                              className="text-[10px] text-white/20 hover:text-white/60 transition-colors font-body uppercase tracking-wider px-1.5 py-0.5 rounded hover:bg-white/5"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
+                            {String(subValue)}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
+                      {currentText || "No content generated for this section."}
+                    </pre>
+                  )}
                 </div>
 
                 <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[11px] text-white/15 font-body">
                     Section {activeLayer + 1} of {sections.length}
-                    {parsed[sections[activeLayer]?.key] && (
-                      <> · {parsed[sections[activeLayer]?.key].length.toLocaleString()} chars</>
+                    {currentText && (
+                      <> · {currentText.length.toLocaleString()} chars</>
+                    )}
+                    {currentData && typeof currentData === "object" && (
+                      <> · {Object.keys(currentData).length} sub-fields</>
                     )}
                   </span>
                   <button

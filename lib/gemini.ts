@@ -46,55 +46,172 @@ function resolveTargetModel(payload: GeneratePayload): TargetModel {
 // never leak into the output as literal placeholders.
 // ---------------------------------------------------------------------------
 
-function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> {
-  // Deep Research mode — 10-section research output
+function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> {  // Deep Research mode — structured JSON with sub-fields to prevent hallucination
   if (payload.mode === "deep_research") {
     return {
       type: "OBJECT",
       properties: {
         section_01_executive_summary: {
-          type: "STRING",
-          description: "SECTION 01 — EXECUTIVE SUMMARY: Comprehensive research overview (1500+ words). Include: research scope and methodology overview, key findings summary (5-7 bullet points expanded into paragraphs), market opportunity assessment with size/growth data, competitive landscape snapshot (who dominates, who is emerging, where gaps exist), strategic recommendation thesis (the ONE big strategic insight), SWOT summary table in markdown, 5 critical action items with priority ranking, expected ROI/impact of following recommendations. Write as a C-suite briefing document — data-driven, decisive, actionable. No fluff.",
+          type: "OBJECT",
+          description: "SECTION 01 — EXECUTIVE SUMMARY",
+          properties: {
+            research_overview: { type: "STRING", description: "Research scope, methodology, and what this document covers. 200+ words." },
+            key_findings: { type: "STRING", description: "5-7 key findings as bullet points expanded into short paragraphs. Each finding must be specific and data-backed. 500+ words." },
+            market_opportunity: { type: "STRING", description: "Market opportunity assessment with market size estimates, growth rate, and addressable market. Include TAM/SAM/SOM numbers. 300+ words." },
+            competitive_landscape_snapshot: { type: "STRING", description: "Who dominates the market, who is emerging, where gaps exist. Name real competitors. 300+ words." },
+            swot_analysis: { type: "STRING", description: "Complete SWOT analysis in markdown table format: | | Positive | Negative | |---|---|---| | Internal | Strengths... | Weaknesses... | | External | Opportunities... | Threats... | Each cell should have 3-5 bullet points." },
+            strategic_recommendation: { type: "STRING", description: "The ONE big strategic insight — the central thesis of the entire research. 200+ words." },
+            critical_action_items: { type: "STRING", description: "5 prioritized action items with [HIGH/MEDIUM/LOW] priority tags. Each with description and expected impact. Numbered list." },
+          },
+          required: ["research_overview", "key_findings", "market_opportunity", "competitive_landscape_snapshot", "swot_analysis", "strategic_recommendation", "critical_action_items"],
         },
         section_02_market_landscape: {
-          type: "STRING",
-          description: "SECTION 02 — MARKET LANDSCAPE (2000+ words). Include: industry overview (current state, market maturity stage, key players with market share estimates), market size and growth trends (TAM/SAM/SOM framework with numbers), target audience deep-dive (demographics: age/income/location/education; psychographics: values/lifestyle/aspirations/pain-points; behavioral patterns: buying frequency/decision triggers/channel preferences), audience segmentation matrix (primary/secondary/tertiary segments with persona descriptions), emerging trends and disruption vectors (technology shifts, consumer behavior changes, regulatory changes), PESTLE analysis for the specific market region, market gaps and whitespace opportunities (underserved needs, pricing gaps, service gaps, positioning gaps), regulatory/compliance considerations for the region, seasonal and cyclical patterns in the industry. Use specific data points, percentages, and trend directions.",
+          type: "OBJECT",
+          description: "SECTION 02 — MARKET LANDSCAPE",
+          properties: {
+            industry_overview: { type: "STRING", description: "Current state of the industry, market maturity stage, key players with estimated market share percentages. 400+ words." },
+            market_size_and_growth: { type: "STRING", description: "TAM/SAM/SOM framework with actual numbers. Include CAGR, growth drivers, and 3-5 year projections. 300+ words." },
+            target_audience_personas: { type: "STRING", description: "Define 3 personas. For EACH: Name, Age, Gender split, Income, Location, Values, Pain points, Buying behavior, Preferred channels. 600+ words." },
+            audience_segmentation: { type: "STRING", description: "Primary, secondary, tertiary segments with size estimates, revenue potential, and segment-specific messaging angle. 300+ words." },
+            emerging_trends: { type: "STRING", description: "5-7 emerging trends and disruption vectors with impact assessment for each. 400+ words." },
+            pestle_analysis: { type: "STRING", description: "PESTLE for the specific market region. Format: Political, Economic, Social, Technological, Legal, Environmental — each with 2-3 points. 400+ words." },
+            market_gaps: { type: "STRING", description: "Whitespace opportunities: underserved needs, pricing gaps, service gaps, positioning gaps — each with opportunity size estimate. 300+ words." },
+            seasonal_patterns: { type: "STRING", description: "Seasonal/cyclical patterns — peak months, slow periods, event-driven spikes, how to capitalize. 200+ words." },
+          },
+          required: ["industry_overview", "market_size_and_growth", "target_audience_personas", "audience_segmentation", "emerging_trends", "pestle_analysis", "market_gaps", "seasonal_patterns"],
         },
         section_03_competitor_deep_dive: {
-          type: "STRING",
-          description: "SECTION 03 — COMPETITOR DEEP DIVE (3000+ words). Identify and analyze 5-7 competitors. For EACH competitor provide: Company overview (founding, size, market presence, revenue tier), Brand positioning statement analysis, Visual identity audit (color palette with hex codes, typography choices, logo style, imagery approach, overall design maturity score 1-10), Website/digital presence analysis (technology stack, page speed perception, UX quality, mobile experience, SEO indicators), Content strategy (blog frequency, social media activity, content themes, engagement quality), Service presentation (how they explain offerings, pricing transparency, differentiation claims), Trust signals (testimonials approach, case studies, certifications, awards, social proof), CTA strategy (primary/secondary CTAs, urgency tactics, conversion funnel), Strengths (3-5 bullet points), Weaknesses/Gaps (3-5 bullet points), Threat level to our brand (high/medium/low with reasoning). After individual analyses include: Competitor comparison matrix table in markdown format, Positioning map description (conceptual X/Y axes relevant to the industry, where each competitor sits, and where whitespace exists), Top 10 competitor insights, Common patterns across all competitors, Industry-wide gaps and weaknesses, Specific differentiation opportunities for our brand.",
+          type: "OBJECT",
+          description: "SECTION 03 — COMPETITOR DEEP DIVE",
+          properties: {
+            competitor_1: { type: "STRING", description: "COMPETITOR 1: Name, founding year, size, revenue tier. Brand positioning. Visual identity (colors with hex, typography, logo style, design score 1-10). Website UX quality. Content strategy. Service presentation. Trust signals. CTA strategy. 3-5 Strengths. 3-5 Weaknesses. Threat level. 400+ words." },
+            competitor_2: { type: "STRING", description: "COMPETITOR 2: Same full analysis structure as competitor_1. 400+ words." },
+            competitor_3: { type: "STRING", description: "COMPETITOR 3: Same full analysis structure. 400+ words." },
+            competitor_4: { type: "STRING", description: "COMPETITOR 4: Same full analysis structure. 400+ words." },
+            competitor_5: { type: "STRING", description: "COMPETITOR 5: Same full analysis structure. 400+ words." },
+            comparison_matrix: { type: "STRING", description: "Markdown table: | Competitor | Positioning | Design Score | Social Following | Price Tier | Key Strength | Key Weakness |" },
+            positioning_map: { type: "STRING", description: "Positioning map with two relevant axes for this industry. Place each competitor. Identify whitespace for our brand. 300+ words." },
+            key_insights: { type: "STRING", description: "Top 10 numbered insights from competitive analysis. Specific and actionable. 300+ words." },
+            differentiation_opportunities: { type: "STRING", description: "5-7 specific differentiation opportunities based on competitor gaps, each with implementation suggestion. 300+ words." },
+          },
+          required: ["competitor_1", "competitor_2", "competitor_3", "competitor_4", "competitor_5", "comparison_matrix", "positioning_map", "key_insights", "differentiation_opportunities"],
         },
         section_04_brand_strategy: {
-          type: "STRING",
-          description: "SECTION 04 — BRAND STRATEGY (2500+ words). Include: Brand positioning statement (For [target], [brand] is the [category] that [key benefit] because [reason to believe]), Value proposition framework (primary value prop in one sentence, 3-5 supporting value props, functional benefits, emotional benefits, self-expressive benefits), Brand personality and archetype mapping (primary archetype with detailed description, secondary archetype, how this manifests in communication), Brand voice guidelines (tone attributes with examples — formal vs casual spectrum, technical vs simple spectrum, serious vs playful spectrum, with DO and DON'T examples for each), Key messaging pillars (3-5 pillars with headline, supporting copy, and proof point for each), Tagline and slogan options (10 options categorized: aspirational, benefit-driven, clever/witty, emotional, action-oriented — with rationale for each), Elevator pitches (15-second, 30-second, 60-second versions), Brand story narrative framework (origin, challenge, transformation, vision), Differentiation strategy matrix (how we differ from each top competitor on 5+ dimensions), Brand promise statement, Brand values (5-7 core values with behavioral descriptions), Brand essence (one word or phrase that captures the brand's soul).",
+          type: "OBJECT",
+          description: "SECTION 04 — BRAND STRATEGY",
+          properties: {
+            positioning_statement: { type: "STRING", description: "Brand positioning using: For [target], [brand] is the [category] that [key benefit] because [reason]. Expand with explanation. 200+ words." },
+            value_proposition: { type: "STRING", description: "Primary value prop (one sentence), 3-5 supporting value props, functional benefits (3-5), emotional benefits (3-5), self-expressive benefits (2-3). 400+ words." },
+            brand_personality_archetype: { type: "STRING", description: "Primary archetype (e.g., Creator, Explorer) with detailed description. Secondary archetype. How these manifest in design and communication. 300+ words." },
+            brand_voice_guidelines: { type: "STRING", description: "Tone spectrums: Formal↔Casual (score 1-10), Technical↔Simple (1-10), Serious↔Playful (1-10). For each: 2 DO examples and 2 DON'T examples of actual copy. 400+ words." },
+            messaging_pillars: { type: "STRING", description: "3-5 pillars. For EACH: Pillar name, Headline, Supporting copy (2-3 sentences), Proof point. 400+ words." },
+            tagline_options: { type: "STRING", description: "10 taglines categorized: 2 Aspirational, 2 Benefit-driven, 2 Clever/witty, 2 Emotional, 2 Action-oriented. Each with one-line rationale." },
+            elevator_pitches: { type: "STRING", description: "Three versions: 15-second (2 sentences), 30-second (4-5 sentences), 60-second (full paragraph)." },
+            brand_story: { type: "STRING", description: "Narrative framework: Origin (why brand exists), Challenge (problem it solves), Transformation (how it changes things), Vision (where it's going). 300+ words." },
+            brand_values: { type: "STRING", description: "5-7 core values. For EACH: Value name, Definition, Behavioral description. 300+ words." },
+          },
+          required: ["positioning_statement", "value_proposition", "brand_personality_archetype", "brand_voice_guidelines", "messaging_pillars", "tagline_options", "elevator_pitches", "brand_story", "brand_values"],
         },
         section_05_visual_identity: {
-          type: "STRING",
-          description: "SECTION 05 — VISUAL IDENTITY DIRECTION (2500+ words). Include: Color palette recommendation (primary color with hex/HSL + psychological rationale, secondary color, 2-3 accent colors, neutral palette for backgrounds/text/borders — total 8-10 colors with exact hex codes and usage rules for each), Typography direction (heading font: specific Google Font name with weights, body font: specific Google Font name with weights, accent/UI font recommendation, font pairing rationale, complete type scale: h1-h6 sizes/weights/line-heights/letter-spacing), Logo direction (recommended mark type: wordmark/lettermark/symbol/combination, style attributes: geometric/organic/minimal/detailed, iconography concepts 3-5 ideas with description, what to avoid in logo design for this industry), Icon style recommendation (line weight, corner radius, style: outlined/filled/duotone, recommended icon library), Imagery style (photography vs illustration decision with rationale, mood/tone direction, color grading recommendation, subject matter guidelines, stock vs custom recommendation), Pattern and texture suggestions (2-3 pattern concepts, usage contexts), Visual consistency rules (spacing rhythm, grid system, border radius standardization, shadow system), Competitor visual gap analysis (what visual territories are overcrowded, what is untapped), Recommended visual positioning (modern vs traditional, bold vs subtle, warm vs cool, maximalist vs minimalist), Design trends to adopt (3-5 current trends that fit) vs avoid (3-5 trends that don't fit), Visual moodboard direction description (5-7 descriptive keywords with explanation).",
+          type: "OBJECT",
+          description: "SECTION 05 — VISUAL IDENTITY DIRECTION",
+          properties: {
+            color_palette: { type: "STRING", description: "8-10 colors. For EACH: Color name, Hex code, HSL values, Psychological rationale, Usage rule. Organized as: Primary, Secondary, Accent 1-3, Success, Warning, Error, Neutrals. Use markdown table or structured list." },
+            typography: { type: "STRING", description: "Heading font: exact Google Font name + weights. Body font: exact Google Font name + weights. Accent font. Font pairing rationale. Type scale: h1-h6 with size(px), weight, line-height, letter-spacing. 400+ words." },
+            logo_direction: { type: "STRING", description: "Recommended mark type (wordmark/lettermark/symbol/combination) with rationale. 3-5 iconography concept ideas. What to AVOID. 300+ words." },
+            icon_style: { type: "STRING", description: "Line weight, corner radius, style (outlined/filled/duotone), recommended icon library with fallback. 150+ words." },
+            imagery_style: { type: "STRING", description: "Photography vs illustration decision. Mood keywords. Color grading. Subject matter guidelines. Stock vs custom. 300+ words." },
+            competitor_visual_gap: { type: "STRING", description: "What visual territories are overcrowded among competitors. What is untapped. Our visual opportunity. 200+ words." },
+            design_trends: { type: "STRING", description: "3-5 trends to ADOPT with rationale. 3-5 trends to AVOID with rationale. 300+ words." },
+            moodboard_direction: { type: "STRING", description: "5-7 moodboard keywords with visual explanation. Reference websites/brands that capture desired aesthetic. 200+ words." },
+          },
+          required: ["color_palette", "typography", "logo_direction", "icon_style", "imagery_style", "competitor_visual_gap", "design_trends", "moodboard_direction"],
         },
         section_06_messaging_content: {
-          type: "STRING",
-          description: "SECTION 06 — MESSAGING & CONTENT STRATEGY (2500+ words). Include: Content pillars (4-6 themed content categories with description, audience relevance, and 5 example topics each), Homepage hero messaging (3 complete headline + subheadline + CTA text variations with rationale for each), Service page messaging framework (for each major service: headline formula, key benefit statement, objection handler, social proof integration point, CTA text), About page narrative direction (story arc, key trust points, team presentation approach, mission/vision statements draft), CTAs hierarchy (primary CTA: text options + color + placement, secondary CTA: text options, tertiary/ghost CTA: text options, CTA microcopy suggestions), SEO keyword direction (10-15 primary keywords with search intent and difficulty estimate, 20-30 long-tail keywords grouped by page), Content tone matrix (formal↔casual, technical↔simple, serious↔playful — with specific score and examples), Social proof strategy (testimonial collection framework, case study template, stats/numbers to highlight, trust badges to pursue), Blog/content marketing direction (15 article topic ideas grouped by funnel stage: awareness/consideration/decision, recommended posting frequency, content format mix), Email marketing hooks (10 subject line templates, welcome sequence outline 5 emails, newsletter content strategy), Social media content direction (platform-specific recommendations, content mix ratio, hashtag strategy, posting cadence).",
+          type: "OBJECT",
+          description: "SECTION 06 — MESSAGING & CONTENT STRATEGY",
+          properties: {
+            content_pillars: { type: "STRING", description: "4-6 pillars. For EACH: Name, Description, Audience relevance, 5 specific topic ideas. 500+ words." },
+            hero_messaging: { type: "STRING", description: "3 homepage hero variations. For EACH: Headline (max 8 words), Subheadline (max 20 words), CTA text, Rationale. 300+ words." },
+            service_page_messaging: { type: "STRING", description: "For each service: Headline formula, Key benefit, Objection handler, Social proof point, CTA text. 400+ words." },
+            cta_hierarchy: { type: "STRING", description: "Primary CTA: 3 text options + color + placement. Secondary CTA: 3 options. Tertiary: 3 options. Microcopy suggestions. 200+ words." },
+            seo_keywords: { type: "STRING", description: "10-15 primary keywords with search intent and difficulty. 20-30 long-tail keywords grouped by page. Structured lists." },
+            blog_topics: { type: "STRING", description: "15 topics grouped: 5 Awareness, 5 Consideration, 5 Decision. Each with title and brief. Posting frequency. 400+ words." },
+            email_marketing: { type: "STRING", description: "10 subject line templates. Welcome sequence (5 emails with subject, goal, content). Newsletter strategy. 300+ words." },
+            social_media_direction: { type: "STRING", description: "Top 3 platforms with specific recommendations. Content mix ratio. 10-15 hashtags. Posting cadence per platform. 300+ words." },
+          },
+          required: ["content_pillars", "hero_messaging", "service_page_messaging", "cta_hierarchy", "seo_keywords", "blog_topics", "email_marketing", "social_media_direction"],
         },
         section_07_website_strategy: {
-          type: "STRING",
-          description: "SECTION 07 — WEBSITE STRATEGY & UX DIRECTION (2500+ words). Include: Website goal definition (primary conversion goal, secondary goals, micro-conversions to track), User journey mapping (3 user personas with their specific journey: awareness trigger → first visit → exploration → consideration → conversion, touchpoints and emotions at each stage), Navigation structure recommendation (primary nav items, secondary nav, utility nav, mobile nav approach, mega menu vs simple dropdown decision), Hero section strategy (3 concepts each with: layout description, text placement, media type video/image/animation, CTA placement, background treatment, emotional hook), Section-by-section website strategy (for each recommended section: purpose, layout direction, content requirements, visual treatment, user psychology goal), Responsive design priorities (mobile-first elements, tablet adaptations, desktop enhancements, breakpoint strategy), Animation and interaction recommendations (entrance animations, scroll-triggered effects, hover states, micro-interactions, loading states — with intensity level recommendation), Trust building section strategy (testimonial layout, client logo display, certification badges, case study preview, statistics/counter section), Form design strategy (field count optimization, multi-step vs single form, field labels/placeholders, validation approach, success state), Footer strategy (information architecture, newsletter integration, social links, legal links, brand sign-off), Performance and technical recommendations (image optimization, lazy loading, core web vitals targets, accessibility WCAG 2.1 AA requirements), Conversion optimization notes (above-the-fold priorities, F-pattern vs Z-pattern, social proof placement, urgency/scarcity considerations).",
+          type: "OBJECT",
+          description: "SECTION 07 — WEBSITE STRATEGY & UX",
+          properties: {
+            website_goals: { type: "STRING", description: "Primary conversion goal. 3-5 secondary goals. 5-7 micro-conversions to track. 200+ words." },
+            user_journey_mapping: { type: "STRING", description: "Journey for 3 personas through: Awareness → First Visit → Exploration → Consideration → Conversion. Touchpoints and emotions at each stage. 500+ words." },
+            navigation_structure: { type: "STRING", description: "Primary nav items (5-7). Secondary nav. Utility nav. Mobile nav approach. Mega menu vs dropdown decision. 200+ words." },
+            hero_section_concepts: { type: "STRING", description: "3 hero concepts. For EACH: Layout, Text placement, Media type, CTA placement, Background, Emotional hook. 400+ words." },
+            key_sections_strategy: { type: "STRING", description: "8-12 website sections. For EACH: Name, Purpose, Layout direction, Content needs, Visual treatment. 500+ words." },
+            animation_recommendations: { type: "STRING", description: "Entrance animations, scroll effects, hover states, micro-interactions, loading states. Overall intensity (subtle/moderate/dramatic). 300+ words." },
+            trust_building: { type: "STRING", description: "Testimonial layout. Client logos. Certifications. Case study format. Stats/counters to highlight. 200+ words." },
+            performance_accessibility: { type: "STRING", description: "Core Web Vitals targets (LCP, FID, CLS with numbers). WCAG 2.1 AA requirements. Image optimization. Responsive breakpoints. 200+ words." },
+          },
+          required: ["website_goals", "user_journey_mapping", "navigation_structure", "hero_section_concepts", "key_sections_strategy", "animation_recommendations", "trust_building", "performance_accessibility"],
         },
         section_08_website_sitemap: {
-          type: "STRING",
-          description: "SECTION 08 — WEBSITE SITEMAP (2000+ words). Create a complete 10-12 page sitemap. For EACH page provide in a structured format: Page number, Page name, Primary purpose (one sentence), Target keywords (2-3), Content writer brief (what to write, tone, length, key points to cover), Suggested sections in order (section name + purpose + content direction for each), Primary CTA (text and destination), Secondary CTA, Internal links to include, Design team notes (layout preference, media needs, special components). After the page-by-page breakdown include: Complete user journey flow diagram description (entry points → key pages → conversion pages), Internal linking strategy matrix (which pages link to which and why), SEO keyword assignment summary table (page → primary keyword → secondary keywords → search intent), Content creation priority order (which pages to write first based on business impact), Sitemap hierarchy visualization description (parent-child page relationships). Pages should typically include: Home, About, Services Overview, 2-3 Individual Service Pages, Process/How We Work, Portfolio/Case Studies, Blog/Resources, Contact/Book Consultation, plus industry-specific pages.",
+          type: "OBJECT",
+          description: "SECTION 08 — WEBSITE SITEMAP",
+          properties: {
+            page_1_home: { type: "STRING", description: "HOME: Purpose, Keywords, Content brief, 6+ sections in order, Primary CTA, Secondary CTA, Internal links, Design notes. 300+ words." },
+            page_2_about: { type: "STRING", description: "ABOUT: Same structure as page_1. 250+ words." },
+            page_3_services: { type: "STRING", description: "SERVICES OVERVIEW: Same structure. 250+ words." },
+            page_4_service_detail: { type: "STRING", description: "PRIMARY SERVICE DETAIL: Same structure. 250+ words." },
+            page_5_service_detail_2: { type: "STRING", description: "SECONDARY SERVICE DETAIL: Same structure. 250+ words." },
+            page_6_process: { type: "STRING", description: "PROCESS/HOW WE WORK: Same structure. 200+ words." },
+            page_7_portfolio: { type: "STRING", description: "PORTFOLIO/GALLERY: Same structure. 200+ words." },
+            page_8_blog: { type: "STRING", description: "BLOG/RESOURCES: Same structure. 200+ words." },
+            page_9_contact: { type: "STRING", description: "CONTACT: Same structure. 200+ words." },
+            page_10_additional: { type: "STRING", description: "ADDITIONAL INDUSTRY-SPECIFIC PAGE (Menu/Pricing/FAQ): Same structure. 200+ words." },
+            internal_linking_strategy: { type: "STRING", description: "Which pages link to which and why. Linking web description. 200+ words." },
+            seo_keyword_assignment: { type: "STRING", description: "Markdown table: | Page | Primary Keyword | Secondary Keywords | Search Intent | for all 10 pages." },
+            content_priority_order: { type: "STRING", description: "Ordered list of which pages to write first with rationale." },
+          },
+          required: ["page_1_home", "page_2_about", "page_3_services", "page_4_service_detail", "page_5_service_detail_2", "page_6_process", "page_7_portfolio", "page_8_blog", "page_9_contact", "page_10_additional", "internal_linking_strategy", "seo_keyword_assignment", "content_priority_order"],
         },
         section_09_design_system: {
-          type: "STRING",
-          description: "SECTION 09 — DESIGN SYSTEM SPECIFICATION (2500+ words). Provide a complete, implementation-ready design system. Include: COLOR TOKENS (8-12 colors with name, hex value, HSL value, and usage rule for each — organized as: primary, secondary, accent, success, warning, error, neutral-50 through neutral-900, background variants), TYPOGRAPHY TOKENS (complete type scale with: token name, font-family, font-size in px and rem, font-weight, line-height, letter-spacing — for: display-xl, display-lg, heading-h1 through h6, body-lg, body-md, body-sm, caption, overline, button-lg, button-sm), SPACING SYSTEM (4px base unit, tokens from spacing-1 through spacing-20 with px values, section padding, container max-widths, component internal padding), BORDER RADIUS (tokens: none, sm, md, lg, xl, full — with px values and usage context), SHADOWS (tokens: shadow-sm, shadow-md, shadow-lg, shadow-xl — with exact CSS values and usage context), BUTTON SPECIFICATIONS (primary, secondary, ghost, destructive — each with: default/hover/active/disabled states, padding, border-radius, font specs, transition), CARD COMPONENT (padding, border, border-radius, background, shadow, hover state), FORM ELEMENTS (input height, padding, border, focus state, error state, label specs, helper text specs), ICON SPECIFICATIONS (sizes: 16/20/24/32px, stroke width, recommended library with fallback), RESPONSIVE BREAKPOINTS (mobile/tablet/desktop/wide values in px), ACCESSIBILITY (minimum contrast ratios, focus ring specification, reduced motion considerations, ARIA patterns for key components), Z-INDEX SCALE (layers: base, dropdown, sticky, modal, toast, tooltip — with values), TRANSITION TOKENS (duration-fast, duration-normal, duration-slow, easing-default, easing-spring — with exact values).",
+          type: "OBJECT",
+          description: "SECTION 09 — DESIGN SYSTEM SPECIFICATION",
+          properties: {
+            color_tokens: { type: "STRING", description: "Markdown table: | Token Name | Hex | HSL | Usage Rule | for 8-12 colors: primary, secondary, accent, success(#22C55E), warning(#F59E0B), error(#EF4444), neutral-50 through neutral-900." },
+            typography_tokens: { type: "STRING", description: "Markdown table: | Token | Font Family | Size (px/rem) | Weight | Line Height | Letter Spacing | for: display-xl, display-lg, h1-h6, body-lg, body-md, body-sm, caption, overline, button-lg, button-sm." },
+            spacing_system: { type: "STRING", description: "4px base. Tokens spacing-1(4px) through spacing-20(80px). Section padding values. Container max-widths (sm/md/lg/xl). Component padding rules." },
+            border_radius_and_shadows: { type: "STRING", description: "Radius tokens: none(0), sm(4px), md(8px), lg(12px), xl(16px), full(9999px). Shadow tokens: sm, md, lg, xl with exact CSS box-shadow values." },
+            button_specs: { type: "STRING", description: "4 variants: primary, secondary, ghost, destructive. For EACH: bg color(hex), text color, border, padding, border-radius, font-size, weight, hover/active/disabled states, transition." },
+            card_and_form_specs: { type: "STRING", description: "Card: padding, border, radius, bg, shadow, hover state. Form inputs: height, padding, border, focus ring, error state, label specs, placeholder color." },
+            responsive_breakpoints: { type: "STRING", description: "Breakpoints: mobile(<640px), tablet(640-1024px), desktop(1024-1280px), wide(>1280px). Grid columns per breakpoint. Key layout changes." },
+            accessibility_specs: { type: "STRING", description: "Contrast ratios (text: 4.5:1, large: 3:1). Focus ring spec. Reduced motion rules. Key ARIA patterns for buttons, modals, nav, forms." },
+            z_index_and_transitions: { type: "STRING", description: "Z-index: base(0), dropdown(10), sticky(20), modal(30), toast(40), tooltip(50). Transitions: fast(150ms), normal(250ms), slow(400ms), easing cubic-bezier values." },
+          },
+          required: ["color_tokens", "typography_tokens", "spacing_system", "border_radius_and_shadows", "button_specs", "card_and_form_specs", "responsive_breakpoints", "accessibility_specs", "z_index_and_transitions"],
         },
         section_10_action_plan: {
-          type: "STRING",
-          description: "SECTION 10 — ACTION PLAN & ROADMAP (2000+ words). Include: PHASE 1 — FOUNDATION (weeks 1-3): Brand identity finalization tasks, design system creation, content strategy approval, competitor monitoring setup — with specific deliverables and responsible roles. PHASE 2 — WEBSITE BUILD (weeks 3-8): Design phase (wireframes → high-fidelity → review), development phase (frontend → backend → CMS), content creation (page-by-page writing schedule), asset creation (photography/illustration/video) — with dependencies and milestones. PHASE 3 — LAUNCH PREPARATION (weeks 8-10): QA testing checklist, SEO technical audit, analytics and tracking setup (GA4/GTM/heatmaps), performance optimization, accessibility audit, soft launch → hard launch timeline. PHASE 4 — GROWTH & OPTIMIZATION (months 3-6): Content marketing launch (blog cadence, social media schedule), SEO monitoring and iteration plan, conversion rate optimization experiments, A/B testing roadmap, email marketing automation setup, review and testimonial collection system. RESOURCE REQUIREMENTS (team roles needed: designer, developer, content writer, SEO specialist, project manager — with estimated hours/role), BUDGET ESTIMATION FRAMEWORK (design, development, content, marketing — tier-based: starter/professional/enterprise ranges), KPI FRAMEWORK (10-15 metrics to track grouped by: acquisition, engagement, conversion, retention — with baseline and 90-day targets), RISK ASSESSMENT (5-7 potential risks with: impact level, probability, mitigation strategy), QUICK WINS (5 actions that can be done in the first week for immediate impact).",
+          type: "OBJECT",
+          description: "SECTION 10 — ACTION PLAN & ROADMAP",
+          properties: {
+            phase_1_foundation: { type: "STRING", description: "PHASE 1 (Weeks 1-3): Brand identity, design system, content strategy, competitor monitoring. Task list with owner and deadline. 300+ words." },
+            phase_2_website: { type: "STRING", description: "PHASE 2 (Weeks 3-8): Design (wireframes→hifi→review), dev (frontend→backend→CMS), content writing schedule, asset creation. Dependencies and milestones. 400+ words." },
+            phase_3_launch: { type: "STRING", description: "PHASE 3 (Weeks 8-10): QA checklist, SEO audit, analytics setup (GA4/GTM/heatmaps), performance optimization, accessibility audit, launch timeline. 300+ words." },
+            phase_4_growth: { type: "STRING", description: "PHASE 4 (Months 3-6): Content marketing cadence, SEO monitoring, CRO experiments, A/B testing roadmap, email automation, review collection. 300+ words." },
+            resource_requirements: { type: "STRING", description: "Roles: Designer, Developer, Content Writer, SEO Specialist, PM, Photographer — with estimated hours per role." },
+            budget_framework: { type: "STRING", description: "3 tiers (Starter/Professional/Enterprise). For each: Design, Development, Content, Marketing budgets, Total range." },
+            kpi_framework: { type: "STRING", description: "Markdown table: | KPI | Category | Baseline | 90-Day Target | Tool | for 10-15 metrics." },
+            risk_assessment: { type: "STRING", description: "Markdown table: | Risk | Impact | Probability | Mitigation | for 5-7 risks." },
+            quick_wins: { type: "STRING", description: "5 first-week actions with expected outcome and effort level (hours)." },
+          },
+          required: ["phase_1_foundation", "phase_2_website", "phase_3_launch", "phase_4_growth", "resource_requirements", "budget_framework", "kpi_framework", "risk_assessment", "quick_wins"],
         },
         full_report: {
           type: "STRING",
-          description: "The COMPLETE research report combining ALL 10 sections into one massive unified document. This is the final deliverable — a comprehensive strategic research document of 20,000+ words that flows naturally from executive summary through to action plan. Use clear section headers (## SECTION 01, ## SECTION 02, etc.), maintain consistent formatting throughout, and ensure cross-references between sections are coherent. This must read as a single professional research document, not just a concatenation.",
+          description: "COMPLETE research report merging ALL 10 sections into one massive document (20,000+ words). Use ## headers for sections, ### for sub-sections. Include all data, tables, hex codes, font names from every section. Must read as a single professional document.",
         },
       },
       required: [
@@ -1128,17 +1245,20 @@ function validateGeneratedJson(rawText: string, payload: GeneratePayload): Valid
     return { ok: false, error: "Output must be a single JSON object" };
   }
 
-  // Deep Research mode validation
+  // Deep Research mode validation — sections are nested objects, full_report is string
   if (payload.mode === "deep_research") {
     const requiredSections = [
       "section_01_executive_summary", "section_02_market_landscape", "section_03_competitor_deep_dive",
       "section_04_brand_strategy", "section_05_visual_identity", "section_06_messaging_content",
       "section_07_website_strategy", "section_08_website_sitemap", "section_09_design_system",
-      "section_10_action_plan", "full_report"
+      "section_10_action_plan"
     ];
-    const missing = requiredSections.filter((k) => !parsed[k] || (typeof parsed[k] === "string" && parsed[k].trim().length === 0));
+    const missing = requiredSections.filter((k) => !parsed[k] || typeof parsed[k] !== "object");
     if (missing.length > 0) {
       return { ok: false, error: `Missing required Deep Research sections: ${missing.join(", ")}` };
+    }
+    if (!parsed.full_report || (typeof parsed.full_report === "string" && parsed.full_report.trim().length === 0)) {
+      return { ok: false, error: "Missing required Deep Research full_report" };
     }
     return { ok: true, value: JSON.stringify(parsed, null, 2) };
   }
