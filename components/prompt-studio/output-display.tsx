@@ -453,6 +453,379 @@ export function OutputDisplay({
             URL.revokeObjectURL(url);
           };
 
+          // Generate beautiful standalone HTML report
+          const handleDownloadHtml = () => {
+            // Convert markdown-like text to HTML
+            const mdToHtml = (text: string): string => {
+              if (!text) return "";
+              return text
+                // Tables: detect markdown tables and convert
+                .replace(/^(\|.+\|)\n(\|[-:\s|]+\|)\n((?:\|.+\|\n?)*)/gm, (_match, header: string, _sep: string, body: string) => {
+                  const headerCells = header.split("|").filter((c: string) => c.trim()).map((c: string) => `<th>${c.trim()}</th>`).join("");
+                  const rows = body.trim().split("\n").map((row: string) => {
+                    const cells = row.split("|").filter((c: string) => c.trim()).map((c: string) => `<td>${c.trim()}</td>`).join("");
+                    return `<tr>${cells}</tr>`;
+                  }).join("");
+                  return `<div class="table-wrap"><table><thead><tr>${headerCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
+                })
+                // Bold
+                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                // Italic
+                .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                // Inline code
+                .replace(/`(.+?)`/g, "<code>$1</code>")
+                // Numbered lists
+                .replace(/^(\d+)\.\s+(.+)$/gm, '<li class="numbered">$2</li>')
+                // Bullet points
+                .replace(/^[-•]\s+(.+)$/gm, "<li>$1</li>")
+                // Wrap consecutive li elements in ul/ol
+                .replace(/((?:<li[^>]*>.*?<\/li>\n?)+)/g, "<ul>$1</ul>")
+                // Line breaks to paragraphs
+                .replace(/\n\n+/g, "</p><p>")
+                .replace(/\n/g, "<br>")
+                ;
+            };
+
+            const sectionHtmlBlocks = sectionDefs.map((s, i) => {
+              const data = parsed[s.key];
+              if (!data || typeof data !== "object") return "";
+
+              const subFields = Object.entries(data).map(([subKey, subValue]) => {
+                const content = mdToHtml(String(subValue));
+                return `
+                  <div class="sub-section">
+                    <h3>${formatSubKey(subKey)}</h3>
+                    <div class="content"><p>${content}</p></div>
+                  </div>`;
+              }).join("");
+
+              return `
+                <section class="report-section" id="section-${i + 1}">
+                  <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <div class="section-number">${String(i + 1).padStart(2, "0")}</div>
+                    <h2>${s.label}</h2>
+                    <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div class="section-body">${subFields}</div>
+                </section>`;
+            }).join("");
+
+            const businessName = (parsed.section_01_executive_summary?.research_overview || "").match(/for\s+([^,]+)/i)?.[1] || "Research Report";
+
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${businessName} — Deep Research Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface-2: #1a1a24;
+    --border: rgba(255,255,255,0.06);
+    --text: #e8e8ed;
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-muted: rgba(255,255,255,0.3);
+    --accent: #6366f1;
+    --accent-glow: rgba(99,102,241,0.15);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1035 50%, #0f0f1a 100%);
+    padding: 80px 40px 60px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.12), transparent 70%);
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .hero .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    position: relative;
+  }
+  .hero .meta {
+    margin-top: 24px;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .hero .meta span {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 6px 16px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+
+  /* Navigation */
+  .toc {
+    max-width: 900px;
+    margin: 40px auto 20px;
+    padding: 0 24px;
+  }
+  .toc-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .toc-item:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: rgba(99,102,241,0.3);
+  }
+  .toc-item .num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 22px;
+  }
+
+  /* Sections */
+  .container { max-width: 900px; margin: 0 auto; padding: 20px 24px 80px; }
+  .report-section {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .report-section:hover { border-color: rgba(255,255,255,0.1); }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .section-header:hover { background: rgba(255,255,255,0.02); }
+  .section-number {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 6px 10px;
+    border-radius: 6px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .section-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    flex: 1;
+  }
+  .chevron { transition: transform 0.3s; color: var(--text-muted); }
+  .collapsed .chevron { transform: rotate(-90deg); }
+  .collapsed .section-body { display: none; }
+  .section-body { padding: 0 24px 24px; }
+
+  /* Sub-sections */
+  .sub-section {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sub-section:last-child { border-bottom: none; }
+  .sub-section h3 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sub-section h3::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* Content */
+  .content { color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
+  .content p { margin-bottom: 12px; }
+  .content strong { color: var(--text); font-weight: 600; }
+  .content ul { padding-left: 20px; margin: 12px 0; }
+  .content li { margin-bottom: 8px; }
+  .content li.numbered { list-style: decimal; }
+  .content code {
+    background: rgba(99,102,241,0.1);
+    color: #a5b4fc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface-2);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #1a1a1a; font-size: 12px; }
+    .hero { background: #f8f8fa; padding: 40px 20px; }
+    .hero h1 { background: none; -webkit-text-fill-color: #1a1a1a; }
+    .report-section { border-color: #e5e5e5; background: #fff; break-inside: avoid; }
+    .section-header { cursor: default; }
+    .collapsed .section-body { display: block !important; }
+    .chevron { display: none; }
+    .toc { display: none; }
+    .content, td, .hero .subtitle, .hero .meta span { color: #444; }
+    th { background: #f0f0f0; color: #1a1a1a; }
+    .sub-section h3 { color: #4338ca; }
+    .section-number { background: #ede9fe; color: #4338ca; }
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 48px 20px 40px; }
+    .toc-grid { grid-template-columns: 1fr; }
+    .section-header { padding: 16px; }
+    .section-body { padding: 0 16px 16px; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <h1>${businessName}</h1>
+    <p class="subtitle">Deep Research Report</p>
+    <div class="meta">
+      <span>Generated ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+      <span>${sectionDefs.length} Sections</span>
+      <span>Powered by Multia Prompt Studio</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <div class="toc-label">Table of Contents</div>
+    <div class="toc-grid">
+      ${sectionDefs.map((s, i) => `<a class="toc-item" href="#section-${i + 1}"><span class="num">${String(i + 1).padStart(2, "0")}</span>${s.label}</a>`).join("")}
+    </div>
+  </nav>
+
+  <main class="container">
+    ${sectionHtmlBlocks}
+  </main>
+
+  <footer class="footer">
+    ${businessName} — Deep Research Report &middot; Generated by Multia Prompt Studio &middot; ${new Date().getFullYear()}
+  </footer>
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: "text/html" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `research-report-${Date.now()}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+
           const currentSectionKey = sections[activeLayer]?.key;
           const currentData = parsed[currentSectionKey];
           const currentText = getSectionText(currentSectionKey);
@@ -499,6 +872,12 @@ export function OutputDisplay({
                       className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
                     >
                       ⬇ Download .md
+                    </button>
+                    <button
+                      onClick={handleDownloadHtml}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-indigo-500/30 hover:border-indigo-500/60"
+                    >
+                      🌐 Download HTML
                     </button>
                   </div>
                 </div>
