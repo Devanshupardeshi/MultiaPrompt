@@ -1175,7 +1175,7 @@ function buildUserParts(payload: GeneratePayload): any[] {
 
 async function callGemini(body: Record<string, unknown>, retryCount = 0, model = "gemini-3.5-flash"): Promise<string> {
   const keysCount = getApiKeys().length;
-  const maxRetries = keysCount > 0 ? keysCount - 1 : 0;
+  const maxRetries = Math.max(keysCount > 0 ? keysCount - 1 : 0, 3); // At least 3 retries for 503
   const apiKey = getNextKey();
 
   const response = await fetch(GEMINI_URL(apiKey, model), {
@@ -1184,9 +1184,18 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0, model =
     body: JSON.stringify(body),
   });
 
+  // Retry on 429 (rate limit) — rotate key, short delay
   if (response.status === 429 && retryCount < maxRetries) {
     console.log(`Rate limited, rotating key (attempt ${retryCount + 1}/${maxRetries})...`);
     await sleep(500 * (retryCount + 1));
+    return callGemini(body, retryCount + 1, model);
+  }
+
+  // Retry on 503 (service unavailable / high demand) — exponential backoff
+  if (response.status === 503 && retryCount < 3) {
+    const delayMs = 2000 * Math.pow(2, retryCount); // 2s, 4s, 8s
+    console.log(`503 Service Unavailable, retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/3)...`);
+    await sleep(delayMs);
     return callGemini(body, retryCount + 1, model);
   }
 
@@ -1194,6 +1203,9 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0, model =
     const errorBody = await response.text();
     if (response.status === 429) {
       throw new Error("All Gemini API keys have exhausted their rate limits. Please try again later.");
+    }
+    if (response.status === 503) {
+      throw new Error("Gemini is experiencing high demand. Retried 3 times but still unavailable. Please try again in a minute.");
     }
     throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
   }
