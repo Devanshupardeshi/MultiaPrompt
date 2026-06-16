@@ -169,7 +169,7 @@ export function OutputDisplay({
         )}
 
         {/* JSON output — standard modes */}
-        {json && !isLoading && mode !== "3d_website" && (
+        {json && !isLoading && mode !== "3d_website" && mode !== "awwwards_website" && (
           <div className="code-block">
             <div className="code-block-header">
               <span className="text-xs text-white/40 font-mono">
@@ -360,6 +360,124 @@ export function OutputDisplay({
                 <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[11px] text-white/15 font-body">
                     Layer {activeLayer + 1} of {layers.length}
+                  </span>
+                  <button
+                    onClick={onRegenerate}
+                    className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    Regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Awwwards 3D — 7-layer WebGL build prompt */}
+        {json && !isLoading && mode === "awwwards_website" && (() => {
+          let parsed: any = {};
+          try { parsed = JSON.parse(json); } catch { parsed = {}; }
+          const layers = [
+            { key: "full_prompt", label: "★ Final Prompt", icon: "🚀" },
+            { key: "layer_concept", label: "01 — Concept", icon: "🎯" },
+            { key: "layer_typography", label: "02 — Type", icon: "Aa" },
+            { key: "layer_palette", label: "03 — Color & Materials", icon: "🎨" },
+            { key: "layer_layout", label: "04 — Layout", icon: "📐" },
+            { key: "layer_webgl", label: "05 — WebGL", icon: "🌐" },
+            { key: "layer_motion", label: "06 — Motion & Parallax", icon: "🎬" },
+            { key: "layer_tech", label: "07 — Tech & Build", icon: "🛠" },
+          ];
+
+          const activeKey = layers[activeLayer]?.key ?? "full_prompt";
+
+          const handleCopyText = async (text: string) => {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }
+          };
+
+          const handleDownloadPrompt = () => {
+            const blob = new Blob([parsed.full_prompt || ""], { type: "text/markdown" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `awwwards-prompt-${Date.now()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+
+          return (
+            <div className="space-y-4">
+              {/* Layer tabs */}
+              <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-lg border border-white/10">
+                {layers.map((layer, i) => (
+                  <button
+                    key={layer.key}
+                    onClick={() => setActiveLayer(i)}
+                    className={`px-3 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors flex items-center gap-1.5 ${
+                      activeLayer === i ? "bg-white text-black" : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span>{layer.icon}</span>
+                    {layer.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active layer content */}
+              <div className="code-block">
+                <div className="code-block-header">
+                  <span className="text-xs text-white/40 font-mono">
+                    {layers[activeLayer]?.label ?? "★ Final Prompt"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleCopyText(parsed[activeKey] || "")}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
+                    >
+                      {copied ? "Copied!" : "Copy"}
+                    </button>
+                    <button
+                      onClick={() => handleCopyText(parsed.full_prompt || "")}
+                      className="text-[11px] text-white/80 hover:text-white transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded bg-white/10 hover:bg-white/20 border border-white/10"
+                    >
+                      🚀 Copy Full Prompt
+                    </button>
+                    <button
+                      onClick={handleDownloadPrompt}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
+                    >
+                      ⬇ Download .md
+                    </button>
+                  </div>
+                </div>
+
+                <div className="code-block-body custom-scrollbar max-h-[600px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
+                    {parsed[activeKey] || "No content generated for this layer."}
+                  </pre>
+                </div>
+
+                <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[11px] text-white/15 font-body">
+                    Paste the Final Prompt into ChatGPT or Claude Code to build the site
                   </span>
                   <button
                     onClick={onRegenerate}

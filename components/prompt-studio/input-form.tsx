@@ -32,7 +32,30 @@ const TONE_PRESETS = [
   "Luxury", "Technical", "Friendly", "Authoritative", "Minimal",
 ];
 
-export type GenerationMode = "standard" | "face_swap" | "mockup" | "3d_website" | "deep_research";
+// Awwwards 3D (WebGL) mode options
+const SITE_CATEGORIES = [
+  { id: "immersive", label: "Immersive / Experiential" },
+  { id: "portfolio", label: "Portfolio" },
+  { id: "agency", label: "Agency / Studio" },
+  { id: "product-launch", label: "Product Launch" },
+  { id: "editorial", label: "Editorial / Storytelling" },
+  { id: "ecommerce", label: "E-commerce" },
+  { id: "brand-microsite", label: "Brand Microsite" },
+];
+
+const WEBGL_FEATURES = [
+  { id: "glsl-shaders", label: "GLSL Shaders" },
+  { id: "particles", label: "Particle Fields" },
+  { id: "physics-rapier", label: "Physics (Rapier)" },
+  { id: "postprocessing", label: "Post-processing (Bloom/CA/DoF)" },
+  { id: "scroll-scrubbed-3d", label: "Scroll-scrubbed 3D" },
+  { id: "parallax-scroll", label: "Parallax (Scroll)" },
+  { id: "parallax-pointer", label: "Parallax (Pointer)" },
+  { id: "spline-import", label: "Spline Import" },
+  { id: "image-distortion-reveals", label: "Image Distortion Reveals" },
+];
+
+export type GenerationMode = "standard" | "face_swap" | "mockup" | "3d_website" | "awwwards_website" | "deep_research";
 
 export interface GeneratePayload {
   mode: GenerationMode;
@@ -67,6 +90,11 @@ export interface GeneratePayload {
   animationNames?: string;
   additionalDetails?: string;
   designMdContent?: string;
+  // Awwwards 3D (WebGL) mode fields
+  siteCategory?: string;
+  signatureMoment?: string;
+  webglFeatures?: string[];
+  referenceSites?: string;
   // Deep Research mode fields
   businessName?: string;
   industry?: string;
@@ -197,6 +225,12 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [designMdContent, setDesignMdContent] = useState("");
   const [designMdFileName, setDesignMdFileName] = useState("");
+
+  // Awwwards 3D (WebGL) specific
+  const [siteCategory, setSiteCategory] = useState("immersive");
+  const [signatureMoment, setSignatureMoment] = useState("");
+  const [webglFeatures, setWebglFeatures] = useState<string[]>(["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]);
+  const [referenceSites, setReferenceSites] = useState("");
 
   // Deep Research specific
   const [businessName, setBusinessName] = useState("");
@@ -358,11 +392,20 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
     );
   };
 
+  const toggleWebglFeature = (featureId: string) => {
+    setWebglFeatures(prev =>
+      prev.includes(featureId)
+        ? prev.filter(f => f !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
   const isValid = () => {
     if (mode === "standard") return description.trim().length > 0;
     if (mode === "face_swap") return sourceFaceImage !== null && targetPoseImage !== null;
     if (mode === "mockup") return logoImage !== null && (mockupReferenceImage !== null || logoDescription.trim().length > 0);
     if (mode === "3d_website") return brandName.trim().length > 0;
+    if (mode === "awwwards_website") return brandName.trim().length > 0;
     if (mode === "deep_research") return businessName.trim().length > 0;
     return false;
   };
@@ -413,6 +456,11 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       animationNames: animationNames.trim() || undefined,
       additionalDetails: additionalDetails.trim() || undefined,
       designMdContent: designMdContent.trim() || undefined,
+      // Awwwards 3D (WebGL) fields
+      siteCategory: siteCategory || undefined,
+      signatureMoment: signatureMoment.trim() || undefined,
+      webglFeatures: webglFeatures.length > 0 ? webglFeatures : undefined,
+      referenceSites: referenceSites.trim() || undefined,
       // Deep Research fields
       businessName: businessName.trim() || undefined,
       industry: researchIndustry.trim() || undefined,
@@ -433,7 +481,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
         
         {/* Mode Selector */}
         <div className="flex flex-wrap gap-2 mb-8 p-1 bg-white/5 rounded-lg w-max border border-white/10">
-          {(["standard", "face_swap", "mockup", "3d_website", "deep_research"] as GenerationMode[]).map((m) => (
+          {(["standard", "face_swap", "mockup", "3d_website", "awwwards_website", "deep_research"] as GenerationMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -441,7 +489,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                 mode === m ? "bg-white text-black" : "text-white/50 hover:text-white"
               }`}
             >
-              {m === "3d_website" ? "3D Website" : m === "deep_research" ? "Deep Research" : m.replace("_", " ")}
+              {m === "3d_website" ? "3D Website" : m === "awwwards_website" ? "Awwwards 3D" : m === "deep_research" ? "Deep Research" : m.replace("_", " ")}
             </button>
           ))}
         </div>
@@ -817,6 +865,206 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
             </div>
           )}
 
+          {mode === "awwwards_website" && (
+            <div className="mb-6 space-y-6">
+              {/* DESIGN.md Upload */}
+              <div className="p-4 border border-dashed border-white/15 rounded-lg bg-white/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs text-white/40 font-body uppercase tracking-[0.2em] mb-1">Import DESIGN.md</label>
+                    <p className="text-[11px] text-white/20 font-body">Upload a design system file to auto-fill colors, fonts, and brand details</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {designMdFileName && (
+                      <span className="text-[11px] text-green-400/70 font-mono flex items-center gap-1.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                        {designMdFileName}
+                      </span>
+                    )}
+                    <label className="cursor-pointer text-[11px] text-white/40 hover:text-white/80 transition-colors font-body uppercase tracking-wider px-3 py-2 rounded border border-white/10 hover:border-white/30 bg-white/5 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                      {designMdFileName ? "Replace" : "Upload .md"}
+                      <input type="file" accept=".md,.markdown" onChange={handleDesignMdUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Intro note */}
+              <div className="p-4 rounded-lg bg-white/[0.02] border border-white/10">
+                <p className="text-[11px] text-white/40 font-body leading-relaxed">
+                  Generates one massive, copy-paste-ready build prompt for an <span className="text-white/70">Awwwards-caliber</span> site —
+                  React/Next + React Three Fiber (Three.js/WebGL), GLSL shaders, Lenis smooth scroll, GSAP ScrollTrigger, Lottie & multi-layer parallax.
+                  Paste the result into ChatGPT or Claude Code to build the full project.
+                </p>
+              </div>
+
+              {/* Row 1: Brand Name + Tagline */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Brand Name (Required)</label>
+                  <input type="text" value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g., Zenith Studios" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Tagline / Hero Headline</label>
+                  <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="e.g., Design Beyond Limits" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Brief Description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this brand/product do? e.g., A luxury watch brand..." rows={2} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Site Category */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Site Category</label>
+                <div className="flex flex-wrap gap-2">
+                  {SITE_CATEGORIES.map(c => (
+                    <button key={c.id} onClick={() => setSiteCategory(c.id)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      siteCategory === c.id ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Signature Moment */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Signature Moment (the ONE unforgettable interaction)</label>
+                <input type="text" value={signatureMoment} onChange={(e) => setSignatureMoment(e.target.value)} placeholder="e.g., a scroll-scrubbed 3D product that explodes into parts, particle hero that reforms into the logo..." className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* Colors */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Color Scheme</label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Primary</span>
+                      <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Accent</span>
+                      <input type="text" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border border-white/20" />
+                    <div>
+                      <span className="text-[10px] text-white/30 font-body uppercase tracking-wider">Background</span>
+                      <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="block text-xs text-white/70 bg-transparent outline-none w-20 font-mono" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fonts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Heading Font (Google Fonts name)</label>
+                  <input type="text" value={headingFont} onChange={(e) => setHeadingFont(e.target.value)} placeholder="e.g., Clash Display, Playfair Display" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Body Font (Google Fonts name)</label>
+                  <input type="text" value={bodyFont} onChange={(e) => setBodyFont(e.target.value)} placeholder="e.g., Inter, Satoshi" className="input-multia w-full px-4 py-3 text-sm" />
+                </div>
+              </div>
+
+              {/* WebGL / Motion Features */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">WebGL & Motion Techniques</label>
+                <div className="flex flex-wrap gap-2">
+                  {WEBGL_FEATURES.map(f => (
+                    <button key={f.id} onClick={() => toggleWebglFeature(f.id)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      webglFeatures.includes(f.id) ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sections to Include */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Sections to Include</label>
+                <div className="flex flex-wrap gap-2">
+                  {["navbar", "hero", "features", "stats", "testimonials", "pricing", "showcase", "collection", "cta", "footer"].map(s => (
+                    <button key={s} onClick={() => toggleSection(s)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      websiteSections.includes(s) ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hero Media URL */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Hero Media URL (MP4 video or image link)</label>
+                <input type="text" value={heroMediaUrl} onChange={(e) => setHeroMediaUrl(e.target.value)} placeholder="https://example.com/hero-video.mp4" className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* Additional Media URLs */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Additional Media URLs (Optional, up to 3)</label>
+                <div className="space-y-2">
+                  {additionalMediaUrls.map((url, i) => (
+                    <input key={i} type="text" value={url} onChange={(e) => { const next = [...additionalMediaUrls]; next[i] = e.target.value; setAdditionalMediaUrls(next); }} placeholder={`Media URL ${i + 1} (image or video)`} className="input-multia w-full px-4 py-2 text-sm" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Reference Sites */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Reference Sites / Vibes (Optional)</label>
+                <input type="text" value={referenceSites} onChange={(e) => setReferenceSites(e.target.value)} placeholder="e.g., lusion.co, active-theory feel, Bruno Simon physics playground, Apple AirPods scroll..." className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* Animation Intensity */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Animation Intensity: {animationIntensity}%</label>
+                <input type="range" min={0} max={100} value={animationIntensity} onChange={(e) => setAnimationIntensity(Number(e.target.value))} className="w-full accent-white" />
+                <div className="flex justify-between text-[10px] text-white/20 mt-1"><span>Subtle</span><span>Awwwards SOTD</span></div>
+              </div>
+
+              {/* Additional Details */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Additional Details (Optional — anything extra)</label>
+                <textarea value={additionalDetails} onChange={(e) => setAdditionalDetails(e.target.value)} placeholder="Add any extra context, brand values, specific section ideas, copy, or technical constraints. The AI will intelligently place this across the right layers." rows={4} className="input-multia w-full px-4 py-3 text-sm resize-none custom-scrollbar" />
+              </div>
+
+              {/* Reference Screenshot */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Reference Screenshot (Optional, Max 2)</label>
+                <div className="flex items-center gap-4">
+                  {referenceImages.length < 2 && (
+                    <label className="flex items-center justify-center px-4 py-2 text-xs font-body uppercase tracking-wider rounded border border-white/10 cursor-pointer hover:bg-white/5">
+                      <input type="file" accept="image/*" multiple onChange={handleMultipleImageUpload} className="hidden" disabled={isLoading} />
+                      Upload Screenshot
+                    </label>
+                  )}
+                  {referenceImages.length > 0 && (
+                    <div className="flex gap-2">
+                      {referenceImages.map((img, i) => (
+                        <div key={i} className="relative group">
+                          <img src={img} alt="Ref" className="h-10 w-10 object-cover rounded border border-white/20" />
+                          <button onClick={() => removeReferenceImage(i)} className="absolute -top-2 -right-2 bg-black text-white rounded-full opacity-0 group-hover:opacity-100 border border-white/20">❌</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {mode === "deep_research" && (
             <div className="mb-6 space-y-6">
               {/* Row 1: Business Name + Industry */}
@@ -924,7 +1172,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
           )}
 
           {/* Visual style picker (Multi-select) — hidden for 3D Website and Deep Research modes */}
-          {mode !== "3d_website" && mode !== "deep_research" && <div className="mb-8">
+          {mode !== "3d_website" && mode !== "awwwards_website" && mode !== "deep_research" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Styles (Select Multiple)</label>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {STYLE_PRESETS.map((style) => (
@@ -998,7 +1246,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
           </div>}
 
           {/* Target image model selector — hidden for 3D Website and Deep Research modes */}
-          {mode !== "3d_website" && mode !== "deep_research" && <div className="mb-8">
+          {mode !== "3d_website" && mode !== "awwwards_website" && mode !== "deep_research" && <div className="mb-8">
             <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-3">Target Image Model</label>
             <div className="flex gap-2">
               {([["nano-banana-pro", "Nano Banana Pro"], ["gpt-image", "GPT Image"]] as const).map(([id, label]) => (
