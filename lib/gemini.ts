@@ -262,7 +262,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
       properties: {
         layer_concept: {
           type: "STRING",
-          description: "LAYER 01 — CONCEPT & ART DIRECTION: The creative concept and narrative. Define the ONE signature moment (the single unforgettable hero interaction the whole site is built around). Map the scroll story arc chapter-by-chapter (what the user feels/sees at 0%→100%). Mood, art direction, emotional tone, references (name real studios/sites — Lusion, Active Theory, OFF+BRAND, Bruno Simon — and WHY). State the Awwwards category positioning and what specifically would earn Site of the Day. 400+ words, concrete and opinionated.",
+          description: "LAYER 01 — CONCEPT & ART DIRECTION: The creative concept and narrative. Define the ONE signature moment (the single unforgettable hero interaction the whole site is built around). IMPORTANT: translate the signature moment into an ASSET-LIGHT equivalent achievable with code-only WebGL (procedural geometry, GLSL shaders, particles, drei <Environment>, or the user's own media) — if it implies a literal product (car, bottle, headphones), describe it ABSTRACTLY (wireframe, particle morph, displaced/iridescent surface), never as a photoreal model or crude primitive boxes. Map the scroll story arc chapter-by-chapter (what the user feels/sees at 0%→100%). Mood, art direction, emotional tone, references (name real studios/sites — Lusion, Active Theory, OFF+BRAND, Bruno Simon — and WHY). State the Awwwards category positioning and what specifically would earn Site of the Day. 400+ words, concrete and opinionated.",
         },
         layer_typography: {
           type: "STRING",
@@ -278,7 +278,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
         },
         layer_webgl: {
           type: "STRING",
-          description: "LAYER 05 — 3D / WEBGL SCENE (THE CORE): The full React Three Fiber scene as code-level spec. <Canvas> config, camera, lights / drei <Environment>, geometry & models (how to source or placeholder them; Draco/Meshopt), which @react-three/drei helpers are used, CUSTOM GLSL shaders (vertex + fragment intent with named uniforms), the @react-three/postprocessing EffectComposer stack (Bloom, ChromaticAberration, DepthOfField, N8AO), instanced particle systems, optional @react-three/rapier physics, and scroll/pointer-driven depth parallax + camera dolly. WebGPU renderer with WebGL2 fallback. Provide real R3F/JSX snippets and shader uniform lists — not prose.",
+          description: "LAYER 05 — 3D / WEBGL SCENE (THE CORE): The full React Three Fiber scene as code-level spec, built from CODE-ONLY assets (the agent cannot create or download models/textures). <Canvas> config with background = the brand background color, camera, lights, and a drei <Environment> PRESET for reflections (no asset files). Build the hero from procedural/parametric geometry (drei shapes, THREE BufferGeometry, instancing, displaced icosahedron/sphere/plane) + CUSTOM GLSL shaders (vertex + fragment with named uniforms — noise, fresnel, gradient, distortion, dissolve) + instanced particle systems, ALL in the brand palette (NO rainbow points, NO starfield). Do NOT load a bespoke GLB / photoreal product model unless a Model URL was explicitly provided; if one is provided, load it via useGLTF + Draco and build around it. If the brand implies a literal product, render it ABSTRACTLY (wireframe / particle morph / displaced surface / the user's own media) — never crude boxes. Add @react-three/postprocessing EffectComposer (Bloom, ChromaticAberration, DepthOfField, N8AO), optional @react-three/rapier physics, and scroll/pointer-driven depth parallax + camera dolly. WebGPU renderer with WebGL2 fallback. Provide real R3F/JSX snippets and shader uniform lists — not prose.",
         },
         layer_motion: {
           type: "STRING",
@@ -997,6 +997,21 @@ Your output is pasted into a code-generation agent (ChatGPT / Claude Code) that 
 - Optional: @react-three/rapier (physics), WebGPU renderer with automatic WebGL2 fallback
 - **STRICTLY FORBIDDEN: Framer Motion.** Do not mention or use it.
 
+## ASSET REALITY (NON-NEGOTIABLE — THIS DETERMINES WHETHER THE SITE RENDERS)
+The consuming agent writes CODE ONLY. It CANNOT create, download, or fabricate bespoke 3D models, photoreal product meshes, GLTF/GLB files, or texture image files. If you instruct it to "load a photorealistic <product> model", "stream 4K textures", or rely on a Draco-compressed GLB when no model URL was provided, it will improvise crude primitive boxes and a default rainbow particle field — a BROKEN result. Never do this.
+
+Build EVERY visual from these code-only building blocks:
+- Procedural / parametric geometry: drei shapes, THREE BufferGeometry, instanced meshes, lathe/extrude, displaced spheres/icosahedrons/planes.
+- Custom GLSL shaders: noise (curl/simplex), gradients, fresnel, refraction, distortion, dissolve, vertex displacement.
+- Instanced particle systems (Points / InstancedMesh) generated in code.
+- @react-three/postprocessing (Bloom, ChromaticAberration, DepthOfField, N8AO).
+- drei <Environment> PRESETS (e.g. preset="city"/"studio"/"sunset") for lighting & reflections — these are built in, no asset files.
+- Typography (variable fonts via next/font) and the user's OWN provided images/video mapped onto meshes.
+
+PALETTE DISCIPLINE: every mesh, particle, light, and the background MUST use the brand palette and the brand background color. No default rainbow points. No random starfield. No leftover gray/untextured primitives. The canvas background equals the brand background color.
+
+ABSTRACTION RULE: if the signature moment implies a literal object (a car, a bottle, headphones), represent it ABSTRACTLY — a wireframe, a particle morph, a displaced/iridescent surface, or the user's own media on a curved plane. NEVER fake a recognizable product out of crude boxes. The default deliverable must look intentional and premium on first load with ZERO external files.
+
 ## THE 7-LAYER FRAMEWORK
 The full blueprint is composed of 7 layers: 01 Concept & Art Direction, 02 Typography, 03 Color & Materials, 04 Layout & Structure, 05 3D/WebGL Scene, 06 Motion/Parallax/Interaction, 07 Tech Stack & Build. You will be asked to produce ONE specific layer at a time — output ONLY that layer's content, in the requested JSON field, and make it exhaustive. Assume the other layers exist; stay in your lane but keep the same brand, concept, colors, and signature moment consistent.
 
@@ -1244,6 +1259,18 @@ function buildUserParts(payload: GeneratePayload): any[] {
     userMessage += `Body Font: ${payload.bodyFont || "(AI: pick a clean variable sans-serif)"}\n`;
     userMessage += `\n--- WEBGL & MOTION TECHNIQUES (must feature these) ---\n`;
     userMessage += `${(payload.webglFeatures || ["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]).join(", ")}\n`;
+
+    const assetStrategy = payload.assetStrategy || "procedural";
+    userMessage += `\n--- 3D ASSET STRATEGY ---\n`;
+    if (assetStrategy === "model" && payload.model3dUrl) {
+      userMessage += `Strategy: REAL MODEL. The user provides a 3D model at: ${payload.model3dUrl}\n`;
+      userMessage += `Load it with useGLTF + Draco and build the WebGL scene around it. Keep ALL other visuals asset-light (procedural geometry + GLSL shaders + particles in the brand palette). Do not invent additional model files.\n`;
+    } else if (assetStrategy === "media") {
+      userMessage += `Strategy: MEDIA-DRIVEN. Use the user's provided hero image/video (the media URLs above) as textured planes with GLSL distortion/reveal shaders for the hero. Supplement with procedural particles/shaders in the brand palette. Do NOT use a bespoke 3D model or photoreal product mesh.\n`;
+    } else {
+      userMessage += `Strategy: PROCEDURAL & SHADER-DRIVEN (no model files). Build the ENTIRE hero/signature moment from procedural geometry (drei shapes, BufferGeometry, instancing, displaced icosahedron/sphere/plane) + custom GLSL shaders + instanced particles — ALL in the brand palette. NO photoreal product model, NO external GLB, NO 4K textures. The scene must render premium on first load with ZERO external asset files.\n`;
+    }
+
     userMessage += `\n--- SECTIONS TO INCLUDE ---\n`;
     userMessage += `${(payload.websiteSections || ["navbar", "hero", "features", "cta", "footer"]).join(", ")}\n`;
     if (payload.heroMediaUrl) userMessage += `\nHero Media URL: ${payload.heroMediaUrl}\n`;
@@ -1683,6 +1710,16 @@ function assembleAwwwardsPrompt(layers: Record<string, string>, payload: Generat
   const category = payload.siteCategory || "immersive";
   const features = (payload.webglFeatures || []).join(", ");
   const sections = (payload.websiteSections || ["navbar", "hero", "features", "cta", "footer"]).join(", ");
+  const primary = payload.primaryColor || "#6366f1";
+  const accent = payload.accentColor || "#d4af7a";
+  const bg = payload.bgColor || "#0b0b0b";
+  const strategy = payload.assetStrategy || "procedural";
+  const strategyLine =
+    strategy === "model" && payload.model3dUrl
+      ? `Real 3D model supplied — load ${payload.model3dUrl} via useGLTF + Draco; everything else procedural & shader-driven`
+      : strategy === "media"
+        ? `Media-driven hero — map the provided image/video onto planes with GLSL distortion/reveal shaders; everything else procedural & shader-driven`
+        : `Procedural & shader-driven — NO model files; the hero is built entirely from code (geometry + GLSL + particles)`;
 
   const body = AWWWARDS_LAYER_ORDER
     .filter((l) => layers[l.key] && layers[l.key].trim())
@@ -1704,10 +1741,15 @@ You are a senior creative front-end engineer and WebGL specialist. Build a compl
 - Optional: @react-three/rapier (physics), WebGPU renderer with WebGL2 fallback
 - **DO NOT use Framer Motion.**
 
+## ASSET REALITY (READ FIRST)
+You write CODE ONLY — you cannot create or download bespoke 3D models, photoreal product meshes, GLB/GLTF files, or texture images. Build every visual from code: procedural/parametric geometry, custom GLSL shaders (noise/gradient/fresnel/distortion), instanced particles, @react-three/postprocessing, drei <Environment> presets, variable-font typography, and any user-provided media. Do NOT load a photoreal product model or stream textures unless a model URL is given below. If the brand implies a literal object, render it abstractly (wireframe / particle morph / displaced surface / user media) — never crude boxes. Every mesh, particle, light, and the canvas background MUST use the brand palette (below); no rainbow points, no random starfield.
+
 ## PROJECT BRIEF
 - Brand: ${brand}${tagline}
 - Category: ${category}
 - Signature moment (build the experience around this): ${payload.signatureMoment || "see Layer 01"}
+- 3D assets: ${strategyLine}
+- Palette (use everywhere — geometry, particles, lights, background): primary ${primary}, accent ${accent}, background ${bg}
 - Sections: ${sections}
 - Featured techniques: ${features || "see layers below"}
 - Animation intensity: ${payload.animationIntensity ?? 80}/100

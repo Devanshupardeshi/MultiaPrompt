@@ -43,6 +43,12 @@ const SITE_CATEGORIES = [
   { id: "brand-microsite", label: "Brand Microsite" },
 ];
 
+const ASSET_STRATEGIES = [
+  { id: "procedural", label: "No model — procedural & shader-driven" },
+  { id: "model", label: "I have a 3D model (GLB/GLTF URL)" },
+  { id: "media", label: "Use my images / video as the hero" },
+];
+
 const WEBGL_FEATURES = [
   { id: "glsl-shaders", label: "GLSL Shaders" },
   { id: "particles", label: "Particle Fields" },
@@ -95,6 +101,8 @@ export interface GeneratePayload {
   signatureMoment?: string;
   webglFeatures?: string[];
   referenceSites?: string;
+  assetStrategy?: string;
+  model3dUrl?: string;
   // Deep Research mode fields
   businessName?: string;
   industry?: string;
@@ -231,6 +239,8 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [signatureMoment, setSignatureMoment] = useState("");
   const [webglFeatures, setWebglFeatures] = useState<string[]>(["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]);
   const [referenceSites, setReferenceSites] = useState("");
+  const [assetStrategy, setAssetStrategy] = useState("procedural");
+  const [model3dUrl, setModel3dUrl] = useState("");
 
   // Deep Research specific
   const [businessName, setBusinessName] = useState("");
@@ -461,6 +471,8 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
       signatureMoment: signatureMoment.trim() || undefined,
       webglFeatures: webglFeatures.length > 0 ? webglFeatures : undefined,
       referenceSites: referenceSites.trim() || undefined,
+      assetStrategy: assetStrategy || undefined,
+      model3dUrl: model3dUrl.trim() || undefined,
       // Deep Research fields
       businessName: businessName.trim() || undefined,
       industry: researchIndustry.trim() || undefined,
@@ -935,6 +947,32 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
               <div>
                 <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">Signature Moment (the ONE unforgettable interaction)</label>
                 <input type="text" value={signatureMoment} onChange={(e) => setSignatureMoment(e.target.value)} placeholder="e.g., a scroll-scrubbed 3D product that explodes into parts, particle hero that reforms into the logo..." className="input-multia w-full px-4 py-3 text-sm" />
+              </div>
+
+              {/* 3D Asset Strategy */}
+              <div>
+                <label className="block text-xs text-white/30 font-body uppercase tracking-[0.2em] mb-2">3D Asset Strategy</label>
+                <div className="flex flex-wrap gap-2">
+                  {ASSET_STRATEGIES.map(s => (
+                    <button key={s.id} onClick={() => setAssetStrategy(s.id)} className={`px-3 py-1.5 rounded-full text-xs transition-colors border ${
+                      assetStrategy === s.id ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/20 hover:border-white/40 hover:text-white"
+                    }`}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-white/20 mt-2 font-body">
+                  The coding agent can write shaders & geometry but cannot create 3D models or textures. Default builds the hero from code only — always renders cleanly.
+                </p>
+                {assetStrategy === "model" && (
+                  <input
+                    type="text"
+                    value={model3dUrl}
+                    onChange={(e) => setModel3dUrl(e.target.value)}
+                    placeholder="https://example.com/model.glb (GLB/GLTF the agent should load)"
+                    className="input-multia w-full px-4 py-3 text-sm mt-3"
+                  />
+                )}
               </div>
 
               {/* Colors */}
