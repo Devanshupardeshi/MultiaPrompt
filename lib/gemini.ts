@@ -266,7 +266,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
         },
         layer_typography: {
           type: "STRING",
-          description: "LAYER 02 — TYPOGRAPHY: Variable fonts (exact Google Fonts / foundry names + weight & width axes), type-as-hero / oversized display strategy, and kinetic typography behaviour. Full hierarchy with clamp() sizes, letter-spacing, line-height, weights. Font-loading strategy (next/font or @font-face, FOUT/FOIT handling). Specify which headlines split into chars (GSAP SplitText) and how weight/tracking animate on scroll. Copy-paste-ready CSS custom properties.",
+          description: "LAYER 02 — TYPOGRAPHY: Variable fonts loaded RELIABLY — via next/font/google (by exact family name) or @fontsource (npm package) ONLY. NEVER reference a local font file the user must supply (no localFont / woff2 paths) and NEVER hotlink a foundry or CDN URL that can expire. If a desired display font is not on Google Fonts or @fontsource, pick the closest available alternative and say which. Cover: type-as-hero / oversized display strategy, kinetic typography, full hierarchy with clamp() sizes, letter-spacing, line-height, weights, FOUT/FOIT handling, which headlines split into chars (GSAP SplitText), and how weight/tracking animate on scroll. Provide the exact next/font (or @fontsource) import code plus copy-paste-ready CSS custom properties.",
         },
         layer_palette: {
           type: "STRING",
@@ -1019,6 +1019,7 @@ RELIABILITY (so it NEVER renders broken):
 - Load via useGLTF + Draco/meshopt; wrap in <Suspense>; preload with useGLTF.preload.
 - ALWAYS implement a procedural fallback (brand-colored displaced geometry + instanced particles) that renders immediately and stays if a model is missing or fails to load — the canvas must never be empty or show crude untextured boxes.
 - Verify the license (prefer CC0) and add attribution if required.
+- LINK RELIABILITY (CRITICAL): never output deep, temporary, or expiring asset URLs (Sketchfab download links, signed URLs, random blogs/CDNs). For models, name the library + model and tell the agent to download & self-host in /public/models, or use a STABLE pinned CDN path (jsDelivr → KhronosGroup/glTF-Sample-Assets, or market.pmnd.rs). For fonts, load via next/font/google or @fontsource by family name — never hotlink a foundry URL or require a local font file. The build agent must verify every asset/link actually loads and fall back gracefully if it does not.
 
 ALSO available as code-only building blocks (use to supplement or as the fallback): procedural/parametric geometry (drei shapes, BufferGeometry, instancing, displaced spheres/icosahedrons/planes), custom GLSL shaders (noise/fresnel/gradient/distortion/dissolve), instanced particles, and the user's OWN provided images/video mapped onto meshes.
 
@@ -1761,6 +1762,7 @@ You are a senior creative front-end engineer and WebGL specialist. Build a compl
 Do NOT sculpt bespoke models from scratch and do NOT fake products with crude primitives — that is what breaks the render. Instead, IMPORT real, free, permissively-licensed (prefer CC0) GLB/GLTF models from curated reliable libraries, then customize and combine them in code:
 - Sources (use by name; don't invent random URLs): Poly Haven (CC0 models + HDRIs), Khronos glTF-Sample-Assets (via jsDelivr CDN), pmndrs market (market.pmnd.rs), Sketchfab (Downloadable + CC), Quaternius / Kenney (CC0).
 - Reliability: prefer downloading models into /public/models and referencing locally; load with useGLTF + Draco, wrap in <Suspense>, useGLTF.preload. ALWAYS render a procedural fallback (brand-colored displaced geometry + particles) immediately so a missing/failed model never leaves the canvas empty or broken. Verify CC0/permissive license and add attribution if required.
+- Working links only: NEVER use expiring/deep URLs. Self-host models in /public/models or use stable pinned CDNs (jsDelivr → KhronosGroup/glTF-Sample-Assets, or market.pmnd.rs). Load fonts via next/font/google or @fontsource by family name — never hotlink a foundry URL or require a local font file. Verify every asset/link loads before shipping; fall back if not.
 - Customize + combine: override materials to the brand palette (metalness/clearcoat/emissive or custom shader), scale/stage and combine multiple models into one cohesive hero, light with drei <Environment> (CC0 HDRI), grade with postprocessing (Bloom, ChromaticAberration, DoF, N8AO).
 - Palette discipline: every model, mesh, particle, light, and the canvas background uses the brand palette below — no rainbow points, no random starfield, no untextured gray primitives.
 
@@ -1825,7 +1827,6 @@ async function generateAwwwardsWebsiteParallel(payload: GeneratePayload): Promis
         temperature: 0.6,
         topP: 0.9,
         topK: 40,
-        maxOutputTokens: 16384,
         responseMimeType: "application/json",
         responseSchema: layerSchema,
         thinkingConfig: { thinkingBudget: deepLayers.has(layerKey) ? 4096 : 2048 },
@@ -1837,6 +1838,7 @@ async function generateAwwwardsWebsiteParallel(payload: GeneratePayload): Promis
   };
 
   const merged: Record<string, string> = {};
+  let lastErrors: string[] = [];
 
   // Up to 3 rounds (initial + 2 retries). Each round runs all still-missing layers in
   // parallel, rotating the key per layer per round so a rate-limited/exhausted key is
@@ -1864,16 +1866,23 @@ async function generateAwwwardsWebsiteParallel(payload: GeneratePayload): Promis
       })
     );
 
+    lastErrors = [];
     for (const result of results) {
       if (result.status === "fulfilled") {
         merged[result.value.key] = result.value.value;
+      } else {
+        lastErrors.push(result.reason?.message || "Unknown error");
       }
+    }
+    if (lastErrors.length > 0) {
+      console.warn(`Awwwards 3D round ${round}: ${lastErrors.length} layer(s) failed — ${lastErrors.slice(0, 3).join(" | ")}`);
     }
   }
 
   const stillMissing = layerKeys.filter((k) => !merged[k]);
   if (stillMissing.length === layerKeys.length) {
-    throw new Error("All Awwwards 3D layer calls failed (likely API rate limits). Please try again in a minute.");
+    // Surface the REAL underlying error (e.g. a 400/429/parse message), not a guess.
+    throw new Error(`All Awwwards 3D layer calls failed. Underlying error: ${lastErrors[0] || "unknown"}`);
   }
 
   // Guarantee EVERY layer is present in the final prompt — never silently drop a section.
