@@ -1804,79 +1804,92 @@ async function generateAwwwardsWebsiteParallel(payload: GeneratePayload): Promis
   // Deeper reasoning for the most complex layers
   const deepLayers = new Set(["layer_webgl", "layer_motion"]);
 
-  // Distribute layers across keys: round-robin
-  const keyAssignments: Array<{ layerKey: string; apiKey: string }> = layerKeys.map((layerKey, i) => ({
-    layerKey,
-    apiKey: keys[i % keys.length],
-  }));
-
-  const keyCounts: Record<string, number> = {};
-  keyAssignments.forEach(({ apiKey }) => {
-    const short = `...${apiKey.slice(-4)}`;
-    keyCounts[short] = (keyCounts[short] || 0) + 1;
-  });
-  console.log(`Awwwards 3D: ${layerKeys.length} layers across ${keys.length} keys:`, keyCounts);
-
-  const results = await Promise.allSettled(
-    keyAssignments.map(async ({ layerKey, apiKey }) => {
-      const layerSchema = {
-        type: "OBJECT",
-        properties: { [layerKey]: properties[layerKey] },
-        required: [layerKey],
-      };
-
-      const layerLabel = properties[layerKey].description || layerKey;
-
-      const body = {
-        contents: [{
-          role: "user",
-          parts: [
-            ...parts,
-            { text: `\nFOCUS: Generate ONLY the "${layerKey}" layer — ${layerLabel}\nBe exhaustive, concrete, and code-level for THIS layer only. Output just the "${layerKey}" field.` },
-          ],
-        }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-          temperature: 0.6,
-          topP: 0.9,
-          topK: 40,
-          responseMimeType: "application/json",
-          responseSchema: layerSchema,
-          thinkingConfig: { thinkingBudget: deepLayers.has(layerKey) ? 4096 : 2048 },
-        },
-      };
-
-      const text = await callGeminiWithKey(body, apiKey, model);
-      const parsed = JSON.parse(text);
-      const value = typeof parsed[layerKey] === "string" ? parsed[layerKey] : JSON.stringify(parsed[layerKey]);
-      console.log(`✓ ${layerKey} complete (key ...${apiKey.slice(-4)})`);
-      return { key: layerKey, value };
-    })
-  );
+  // Generate a single layer with a specific key. Throws on failure (caller retries).
+  const generateOneLayer = async (layerKey: string, apiKey: string): Promise<string> => {
+    const layerSchema = {
+      type: "OBJECT",
+      properties: { [layerKey]: properties[layerKey] },
+      required: [layerKey],
+    };
+    const layerLabel = properties[layerKey].description || layerKey;
+    const body = {
+      contents: [{
+        role: "user",
+        parts: [
+          ...parts,
+          { text: `\nFOCUS: Generate ONLY the "${layerKey}" layer — ${layerLabel}\nBe exhaustive, concrete, and code-level for THIS layer only. Output just the "${layerKey}" field.` },
+        ],
+      }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: {
+        temperature: 0.6,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 16384,
+        responseMimeType: "application/json",
+        responseSchema: layerSchema,
+        thinkingConfig: { thinkingBudget: deepLayers.has(layerKey) ? 4096 : 2048 },
+      },
+    };
+    const text = await callGeminiWithKey(body, apiKey, model);
+    const parsed = JSON.parse(text);
+    return typeof parsed[layerKey] === "string" ? parsed[layerKey] : JSON.stringify(parsed[layerKey]);
+  };
 
   const merged: Record<string, string> = {};
-  const failures: string[] = [];
 
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      merged[result.value.key] = result.value.value;
+  // Up to 3 rounds (initial + 2 retries). Each round runs all still-missing layers in
+  // parallel, rotating the key per layer per round so a rate-limited/exhausted key is
+  // avoided on retry. This guarantees every layer is filled even under flaky limits.
+  const maxRounds = 3;
+  for (let round = 0; round < maxRounds; round++) {
+    const pending = layerKeys.filter((k) => !merged[k]);
+    if (pending.length === 0) break;
+
+    if (round === 0) {
+      console.log(`Awwwards 3D: generating ${pending.length} layers across ${keys.length} keys...`);
     } else {
-      failures.push(result.reason?.message || "Unknown error");
+      console.log(`Awwwards 3D: retry round ${round} for ${pending.length} layer(s): ${pending.join(", ")}`);
+      await sleep(1500 * round); // brief backoff before retrying
+    }
+
+    const results = await Promise.allSettled(
+      pending.map((layerKey, i) => {
+        // Offset key choice by the round so a retry lands on a different key
+        const apiKey = keys[(i + round) % keys.length];
+        return generateOneLayer(layerKey, apiKey).then((value) => {
+          console.log(`✓ ${layerKey} complete (key ...${apiKey.slice(-4)})`);
+          return { key: layerKey, value };
+        });
+      })
+    );
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        merged[result.value.key] = result.value.value;
+      }
     }
   }
 
-  if (Object.keys(merged).length === 0) {
-    throw new Error(`All parallel layer calls failed: ${failures.join("; ")}`);
+  const stillMissing = layerKeys.filter((k) => !merged[k]);
+  if (stillMissing.length === layerKeys.length) {
+    throw new Error("All Awwwards 3D layer calls failed (likely API rate limits). Please try again in a minute.");
   }
 
-  if (failures.length > 0) {
-    console.warn(`Awwwards 3D: ${failures.length} layer(s) failed, ${Object.keys(merged).length} succeeded. Failures: ${failures.join("; ")}`);
+  // Guarantee EVERY layer is present in the final prompt — never silently drop a section.
+  // A failed layer becomes an agent-actionable note so the build prompt stays complete.
+  for (const k of stillMissing) {
+    const label = (properties[k].description || k).split(":")[0].trim();
+    merged[k] = `> NOTE: This layer (${label}) hit a temporary generation limit and was left for the build agent to complete. BUILD AGENT: write this layer yourself, fully consistent with the brand, palette, signature moment, and the other layers in this brief. (Or click Regenerate in Multia to auto-fill it.)`;
+  }
+  if (stillMissing.length > 0) {
+    console.warn(`Awwwards 3D: ${stillMissing.length} layer(s) used a placeholder after ${maxRounds} rounds: ${stillMissing.join(", ")}`);
   }
 
-  // Assemble the final copy-paste build prompt from whatever layers succeeded
+  // Assemble the final copy-paste build prompt from all layers (always complete now)
   merged.full_prompt = assembleAwwwardsPrompt(merged, payload);
 
-  console.log(`Awwwards 3D: ${Object.keys(merged).length - 1}/${layerKeys.length} layers generated successfully.`);
+  console.log(`Awwwards 3D: ${layerKeys.length - stillMissing.length}/${layerKeys.length} layers generated successfully.`);
 
   return JSON.stringify(merged, null, 2);
 }
