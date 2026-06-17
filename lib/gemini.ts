@@ -262,7 +262,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
       properties: {
         layer_concept: {
           type: "STRING",
-          description: "LAYER 01 — CONCEPT & ART DIRECTION: The creative concept and narrative. Define the ONE signature moment (the single unforgettable hero interaction the whole site is built around). IMPORTANT: translate the signature moment into an ASSET-LIGHT equivalent achievable with code-only WebGL (procedural geometry, GLSL shaders, particles, drei <Environment>, or the user's own media) — if it implies a literal product (car, bottle, headphones), describe it ABSTRACTLY (wireframe, particle morph, displaced/iridescent surface), never as a photoreal model or crude primitive boxes. Map the scroll story arc chapter-by-chapter (what the user feels/sees at 0%→100%). Mood, art direction, emotional tone, references (name real studios/sites — Lusion, Active Theory, OFF+BRAND, Bruno Simon — and WHY). State the Awwwards category positioning and what specifically would earn Site of the Day. 400+ words, concrete and opinionated.",
+          description: "LAYER 01 — CONCEPT & ART DIRECTION: The creative concept and narrative. Define the ONE signature moment (the single unforgettable hero interaction the whole site is built around). IMPORTANT: make the signature moment BUILDABLE by importing + customizing real free GLB models (or, secondarily, procedural geometry). If it implies a literal object (car, bottle, headphones), name SPECIFIC candidate CC0/free models from curated libraries (Poly Haven, Khronos samples, pmndrs market, Sketchfab, Quaternius/Kenney) to source, recolor to the brand, and combine — never require a bespoke model authored from scratch, and never fake it with crude primitive boxes. Map the scroll story arc chapter-by-chapter (what the user feels/sees at 0%→100%). Mood, art direction, emotional tone, references (name real studios/sites — Lusion, Active Theory, OFF+BRAND, Bruno Simon — and WHY). State the Awwwards category positioning and what specifically would earn Site of the Day. 400+ words, concrete and opinionated.",
         },
         layer_typography: {
           type: "STRING",
@@ -278,7 +278,7 @@ function buildResponseSchema(payload: GeneratePayload): Record<string, unknown> 
         },
         layer_webgl: {
           type: "STRING",
-          description: "LAYER 05 — 3D / WEBGL SCENE (THE CORE): The full React Three Fiber scene as code-level spec, built from CODE-ONLY assets (the agent cannot create or download models/textures). <Canvas> config with background = the brand background color, camera, lights, and a drei <Environment> PRESET for reflections (no asset files). Build the hero from procedural/parametric geometry (drei shapes, THREE BufferGeometry, instancing, displaced icosahedron/sphere/plane) + CUSTOM GLSL shaders (vertex + fragment with named uniforms — noise, fresnel, gradient, distortion, dissolve) + instanced particle systems, ALL in the brand palette (NO rainbow points, NO starfield). Do NOT load a bespoke GLB / photoreal product model unless a Model URL was explicitly provided; if one is provided, load it via useGLTF + Draco and build around it. If the brand implies a literal product, render it ABSTRACTLY (wireframe / particle morph / displaced surface / the user's own media) — never crude boxes. Add @react-three/postprocessing EffectComposer (Bloom, ChromaticAberration, DepthOfField, N8AO), optional @react-three/rapier physics, and scroll/pointer-driven depth parallax + camera dolly. WebGPU renderer with WebGL2 fallback. Provide real R3F/JSX snippets and shader uniform lists — not prose.",
+          description: "LAYER 05 — 3D / WEBGL SCENE (THE CORE): The full React Three Fiber scene as code-level spec. <Canvas> config with background = the brand background color, camera, lights, and a drei <Environment> PRESET (CC0 HDRI) for reflections. PRIMARY APPROACH: source real, free, CC0/permissive GLB models from curated libraries (Poly Haven, Khronos glTF-Sample-Assets via jsDelivr CDN, pmndrs market / market.pmnd.rs, Sketchfab Downloadable+CC, Quaternius/Kenney) that fit the brand & signature moment — name SPECIFIC candidate models, never invent random URLs. Self-host in /public/models, load via useGLTF + Draco inside <Suspense> (useGLTF.preload), then CUSTOMIZE (recolor materials to the brand palette, metalness/clearcoat/emissive or a custom shader) and COMBINE several models into ONE staged hero composition. If a Model URL was provided by the user, use that as the hero. ALWAYS include a procedural fallback (brand-colored displaced geometry + instanced particles) that renders immediately so a missing/failed load never breaks the canvas. Supplement with procedural geometry + custom GLSL shaders (vertex+fragment uniforms: noise/fresnel/gradient/distortion/dissolve) + instanced particles — ALL in the brand palette (NO rainbow points, NO starfield, NO untextured gray boxes). Add @react-three/postprocessing EffectComposer (Bloom, ChromaticAberration, DepthOfField, N8AO), optional @react-three/rapier physics, and scroll/pointer-driven depth parallax + camera dolly. WebGPU renderer with WebGL2 fallback. Provide real R3F/JSX snippets and shader uniform lists — not prose.",
         },
         layer_motion: {
           type: "STRING",
@@ -997,20 +997,32 @@ Your output is pasted into a code-generation agent (ChatGPT / Claude Code) that 
 - Optional: @react-three/rapier (physics), WebGPU renderer with automatic WebGL2 fallback
 - **STRICTLY FORBIDDEN: Framer Motion.** Do not mention or use it.
 
-## ASSET REALITY (NON-NEGOTIABLE — THIS DETERMINES WHETHER THE SITE RENDERS)
-The consuming agent writes CODE ONLY. It CANNOT create, download, or fabricate bespoke 3D models, photoreal product meshes, GLTF/GLB files, or texture image files. If you instruct it to "load a photorealistic <product> model", "stream 4K textures", or rely on a Draco-compressed GLB when no model URL was provided, it will improvise crude primitive boxes and a default rainbow particle field — a BROKEN result. Never do this.
+## ASSET REALITY & 3D SOURCING (THIS DETERMINES WHETHER THE SITE RENDERS)
+The consuming agent writes CODE — it cannot SCULPT a bespoke product model from nothing. So NEVER ask it to "model a photorealistic <product>" from scratch, and NEVER let it fake a recognizable product out of crude primitive boxes (that is the #1 cause of broken output). The WINNING strategy is to IMPORT real, free, permissively-licensed (prefer CC0) GLB/GLTF models from curated reliable libraries, then CUSTOMIZE and COMBINE them in code.
 
-Build EVERY visual from these code-only building blocks:
-- Procedural / parametric geometry: drei shapes, THREE BufferGeometry, instanced meshes, lathe/extrude, displaced spheres/icosahedrons/planes.
-- Custom GLSL shaders: noise (curl/simplex), gradients, fresnel, refraction, distortion, dissolve, vertex displacement.
-- Instanced particle systems (Points / InstancedMesh) generated in code.
-- @react-three/postprocessing (Bloom, ChromaticAberration, DepthOfField, N8AO).
-- drei <Environment> PRESETS (e.g. preset="city"/"studio"/"sunset") for lighting & reflections — these are built in, no asset files.
-- Typography (variable fonts via next/font) and the user's OWN provided images/video mapped onto meshes.
+CURATED FREE 3D / HDRI SOURCES (reference these by NAME; do not invent random URLs):
+- Poly Haven (polyhaven.com) — CC0 models, textures, and HDRIs.
+- Khronos glTF Sample Assets (github.com/KhronosGroup/glTF-Sample-Assets, hotlinkable via the jsDelivr CDN) — reliable known-good GLBs.
+- pmndrs market (market.pmnd.rs) — curated, R3F-ready GLBs on CDN.
+- Sketchfab (sketchfab.com) — filter Downloadable + CC license.
+- Quaternius (quaternius.com) and Kenney (kenney.nl) — CC0 low-poly packs.
+- modelviewer.dev / three.js example assets — known-good GLB URLs for instant scaffolding.
 
-PALETTE DISCIPLINE: every mesh, particle, light, and the background MUST use the brand palette and the brand background color. No default rainbow points. No random starfield. No leftover gray/untextured primitives. The canvas background equals the brand background color.
+CUSTOMIZE + COMBINE (this is what makes it Awwwards, not generic):
+- Recolor / override the imported model's materials to the BRAND palette (MeshStandardMaterial / MeshPhysicalMaterial or a custom shader); add emissive accents, clearcoat, metalness.
+- Scale, orient, and STAGE multiple models together into ONE cohesive composition (e.g. a hero object + floating satellite props).
+- Light with drei <Environment> (CC0 HDRI) and grade with postprocessing (Bloom, ChromaticAberration, DoF, N8AO) in the brand colors.
+- Drive everything with scroll/pointer parallax + camera dolly.
 
-ABSTRACTION RULE: if the signature moment implies a literal object (a car, a bottle, headphones), represent it ABSTRACTLY — a wireframe, a particle morph, a displaced/iridescent surface, or the user's own media on a curved plane. NEVER fake a recognizable product out of crude boxes. The default deliverable must look intentional and premium on first load with ZERO external files.
+RELIABILITY (so it NEVER renders broken):
+- Prefer DOWNLOADING chosen models into /public/models and referencing them locally (avoids CORS/hotlink breakage). For instant-run scaffolding you may hotlink a known CDN sample GLB as a placeholder to swap.
+- Load via useGLTF + Draco/meshopt; wrap in <Suspense>; preload with useGLTF.preload.
+- ALWAYS implement a procedural fallback (brand-colored displaced geometry + instanced particles) that renders immediately and stays if a model is missing or fails to load — the canvas must never be empty or show crude untextured boxes.
+- Verify the license (prefer CC0) and add attribution if required.
+
+ALSO available as code-only building blocks (use to supplement or as the fallback): procedural/parametric geometry (drei shapes, BufferGeometry, instancing, displaced spheres/icosahedrons/planes), custom GLSL shaders (noise/fresnel/gradient/distortion/dissolve), instanced particles, and the user's OWN provided images/video mapped onto meshes.
+
+PALETTE DISCIPLINE: every model material, mesh, particle, light, and the canvas background MUST use the brand palette and the brand background color. No default rainbow points. No random starfield. No leftover gray/untextured primitives.
 
 ## THE 7-LAYER FRAMEWORK
 The full blueprint is composed of 7 layers: 01 Concept & Art Direction, 02 Typography, 03 Color & Materials, 04 Layout & Structure, 05 3D/WebGL Scene, 06 Motion/Parallax/Interaction, 07 Tech Stack & Build. You will be asked to produce ONE specific layer at a time — output ONLY that layer's content, in the requested JSON field, and make it exhaustive. Assume the other layers exist; stay in your lane but keep the same brand, concept, colors, and signature moment consistent.
@@ -1260,15 +1272,17 @@ function buildUserParts(payload: GeneratePayload): any[] {
     userMessage += `\n--- WEBGL & MOTION TECHNIQUES (must feature these) ---\n`;
     userMessage += `${(payload.webglFeatures || ["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]).join(", ")}\n`;
 
-    const assetStrategy = payload.assetStrategy || "procedural";
+    const assetStrategy = payload.assetStrategy || "library";
     userMessage += `\n--- 3D ASSET STRATEGY ---\n`;
     if (assetStrategy === "model" && payload.model3dUrl) {
-      userMessage += `Strategy: REAL MODEL. The user provides a 3D model at: ${payload.model3dUrl}\n`;
-      userMessage += `Load it with useGLTF + Draco and build the WebGL scene around it. Keep ALL other visuals asset-light (procedural geometry + GLSL shaders + particles in the brand palette). Do not invent additional model files.\n`;
+      userMessage += `Strategy: REAL MODEL (user-supplied). The user provides a 3D model at: ${payload.model3dUrl}\n`;
+      userMessage += `Load it with useGLTF + Draco, recolor its materials to the brand palette, and stage it as the hero. Supplement with procedural geometry/particles in the brand palette. Add a procedural fallback if it fails to load.\n`;
     } else if (assetStrategy === "media") {
-      userMessage += `Strategy: MEDIA-DRIVEN. Use the user's provided hero image/video (the media URLs above) as textured planes with GLSL distortion/reveal shaders for the hero. Supplement with procedural particles/shaders in the brand palette. Do NOT use a bespoke 3D model or photoreal product mesh.\n`;
+      userMessage += `Strategy: MEDIA-DRIVEN. Use the user's provided hero image/video (the media URLs above) as textured planes with GLSL distortion/reveal shaders for the hero. Supplement with procedural particles/shaders in the brand palette. Do NOT use a bespoke 3D model.\n`;
+    } else if (assetStrategy === "procedural") {
+      userMessage += `Strategy: PROCEDURAL & SHADER-DRIVEN (abstract). Build the ENTIRE hero from procedural geometry (drei shapes, BufferGeometry, instancing, displaced icosahedron/sphere/plane) + custom GLSL shaders + instanced particles — ALL in the brand palette. No model files. Render premium on first load with ZERO external assets.\n`;
     } else {
-      userMessage += `Strategy: PROCEDURAL & SHADER-DRIVEN (no model files). Build the ENTIRE hero/signature moment from procedural geometry (drei shapes, BufferGeometry, instancing, displaced icosahedron/sphere/plane) + custom GLSL shaders + instanced particles — ALL in the brand palette. NO photoreal product model, NO external GLB, NO 4K textures. The scene must render premium on first load with ZERO external asset files.\n`;
+      userMessage += `Strategy: SOURCE FREE GLB MODELS (curated libraries) — RECOMMENDED. Choose real, CC0/permissive GLB models that fit the brand + signature moment from: Poly Haven, Khronos glTF-Sample-Assets (jsDelivr CDN), pmndrs market (market.pmnd.rs), Sketchfab (Downloadable + CC), Quaternius/Kenney. Name SPECIFIC candidate models — never invent random URLs. Self-host them in /public/models, load with useGLTF + Draco inside <Suspense>, then CUSTOMIZE (recolor materials to the brand palette, metalness/clearcoat/emissive) and COMBINE several into ONE cohesive, staged hero composition. Light with drei <Environment> (CC0 HDRI) and grade with postprocessing. ALWAYS include a procedural fallback (brand-colored displaced geometry + particles) that renders immediately so a missing/failed model never breaks the canvas.\n`;
     }
 
     userMessage += `\n--- SECTIONS TO INCLUDE ---\n`;
@@ -1713,13 +1727,15 @@ function assembleAwwwardsPrompt(layers: Record<string, string>, payload: Generat
   const primary = payload.primaryColor || "#6366f1";
   const accent = payload.accentColor || "#d4af7a";
   const bg = payload.bgColor || "#0b0b0b";
-  const strategy = payload.assetStrategy || "procedural";
+  const strategy = payload.assetStrategy || "library";
   const strategyLine =
     strategy === "model" && payload.model3dUrl
-      ? `Real 3D model supplied — load ${payload.model3dUrl} via useGLTF + Draco; everything else procedural & shader-driven`
+      ? `Real 3D model supplied — load ${payload.model3dUrl} via useGLTF + Draco, recolor to the brand palette and stage it; procedural fallback if it fails`
       : strategy === "media"
-        ? `Media-driven hero — map the provided image/video onto planes with GLSL distortion/reveal shaders; everything else procedural & shader-driven`
-        : `Procedural & shader-driven — NO model files; the hero is built entirely from code (geometry + GLSL + particles)`;
+        ? `Media-driven hero — map the provided image/video onto planes with GLSL distortion/reveal shaders; supplement with procedural particles`
+        : strategy === "procedural"
+          ? `Procedural & shader-driven — abstract hero built entirely from code (geometry + GLSL + particles); no model files`
+          : `Source free CC0 GLB models from curated libraries (Poly Haven, Khronos samples, pmndrs market, Sketchfab, Quaternius/Kenney), self-host in /public/models, recolor to the brand palette, and combine several into one staged hero — with a procedural fallback`;
 
   const body = AWWWARDS_LAYER_ORDER
     .filter((l) => layers[l.key] && layers[l.key].trim())
@@ -1741,8 +1757,12 @@ You are a senior creative front-end engineer and WebGL specialist. Build a compl
 - Optional: @react-three/rapier (physics), WebGPU renderer with WebGL2 fallback
 - **DO NOT use Framer Motion.**
 
-## ASSET REALITY (READ FIRST)
-You write CODE ONLY — you cannot create or download bespoke 3D models, photoreal product meshes, GLB/GLTF files, or texture images. Build every visual from code: procedural/parametric geometry, custom GLSL shaders (noise/gradient/fresnel/distortion), instanced particles, @react-three/postprocessing, drei <Environment> presets, variable-font typography, and any user-provided media. Do NOT load a photoreal product model or stream textures unless a model URL is given below. If the brand implies a literal object, render it abstractly (wireframe / particle morph / displaced surface / user media) — never crude boxes. Every mesh, particle, light, and the canvas background MUST use the brand palette (below); no rainbow points, no random starfield.
+## 3D ASSETS — SOURCE, CUSTOMIZE & COMBINE (READ FIRST)
+Do NOT sculpt bespoke models from scratch and do NOT fake products with crude primitives — that is what breaks the render. Instead, IMPORT real, free, permissively-licensed (prefer CC0) GLB/GLTF models from curated reliable libraries, then customize and combine them in code:
+- Sources (use by name; don't invent random URLs): Poly Haven (CC0 models + HDRIs), Khronos glTF-Sample-Assets (via jsDelivr CDN), pmndrs market (market.pmnd.rs), Sketchfab (Downloadable + CC), Quaternius / Kenney (CC0).
+- Reliability: prefer downloading models into /public/models and referencing locally; load with useGLTF + Draco, wrap in <Suspense>, useGLTF.preload. ALWAYS render a procedural fallback (brand-colored displaced geometry + particles) immediately so a missing/failed model never leaves the canvas empty or broken. Verify CC0/permissive license and add attribution if required.
+- Customize + combine: override materials to the brand palette (metalness/clearcoat/emissive or custom shader), scale/stage and combine multiple models into one cohesive hero, light with drei <Environment> (CC0 HDRI), grade with postprocessing (Bloom, ChromaticAberration, DoF, N8AO).
+- Palette discipline: every model, mesh, particle, light, and the canvas background uses the brand palette below — no rainbow points, no random starfield, no untextured gray primitives.
 
 ## PROJECT BRIEF
 - Brand: ${brand}${tagline}

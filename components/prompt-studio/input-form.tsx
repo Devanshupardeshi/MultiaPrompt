@@ -44,7 +44,8 @@ const SITE_CATEGORIES = [
 ];
 
 const ASSET_STRATEGIES = [
-  { id: "procedural", label: "No model — procedural & shader-driven" },
+  { id: "library", label: "Auto-source free GLB models (customize + combine)" },
+  { id: "procedural", label: "Procedural & shader-driven (abstract)" },
   { id: "model", label: "I have a 3D model (GLB/GLTF URL)" },
   { id: "media", label: "Use my images / video as the hero" },
 ];
@@ -239,7 +240,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [signatureMoment, setSignatureMoment] = useState("");
   const [webglFeatures, setWebglFeatures] = useState<string[]>(["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]);
   const [referenceSites, setReferenceSites] = useState("");
-  const [assetStrategy, setAssetStrategy] = useState("procedural");
+  const [assetStrategy, setAssetStrategy] = useState("library");
   const [model3dUrl, setModel3dUrl] = useState("");
 
   // Deep Research specific
@@ -962,7 +963,7 @@ export function InputForm({ onGenerate, isLoading }: InputFormProps) {
                   ))}
                 </div>
                 <p className="text-[10px] text-white/20 mt-2 font-body">
-                  The coding agent can write shaders & geometry but cannot create 3D models or textures. Default builds the hero from code only — always renders cleanly.
+                  Default sources real, free CC0 GLB models (Poly Haven, Khronos samples, pmndrs market, Sketchfab), recolors them to your palette, and combines them — with a procedural fallback so it never renders broken.
                 </p>
                 {assetStrategy === "model" && (
                   <input
