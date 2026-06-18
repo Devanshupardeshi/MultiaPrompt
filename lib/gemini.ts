@@ -1640,7 +1640,14 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0, model =
       );
     }
     if (response.status === 503) {
-      throw new Error("Gemini is experiencing high demand. Retried 4 times but still unavailable. Please try again in a minute.");
+      let realError = errorBody;
+      try {
+        const parsed = JSON.parse(errorBody);
+        if (parsed.error && parsed.error.message) {
+          realError = parsed.error.message;
+        }
+      } catch (e) {}
+      throw new Error(`Gemini API 503 Error: ${realError}`);
     }
     throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
   }
