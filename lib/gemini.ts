@@ -1574,7 +1574,8 @@ function buildUserParts(payload: GeneratePayload): any[] {
 
 async function callGemini(body: Record<string, unknown>, retryCount = 0, model = "gemini-3.5-flash"): Promise<string> {
   const keysCount = getApiKeys().length;
-  const maxRetries = Math.max(keysCount > 0 ? keysCount - 1 : 0, 3); // At least 3 retries for 503
+  // Retry up to keysCount * 2 times for 429 (to cycle through all keys with real backoff)
+  const maxRetries = Math.max(keysCount > 0 ? keysCount * 2 : 2, 5);
   const apiKey = getNextKey();
 
   const response = await fetch(GEMINI_URL(apiKey, model), {
@@ -1583,17 +1584,46 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0, model =
     body: JSON.stringify(body),
   });
 
-  // Retry on 429 (rate limit) — rotate key, short delay
+  // Retry on 429 (rate limit) — rotate key + exponential backoff
   if (response.status === 429 && retryCount < maxRetries) {
-    console.log(`Rate limited, rotating key (attempt ${retryCount + 1}/${maxRetries})...`);
-    await sleep(500 * (retryCount + 1));
+    // Check for daily quota exhaustion (RESOURCE_EXHAUSTED with "per day" in message)
+    const errorBody = await response.text().catch(() => "");
+    const isDailyQuota = errorBody.toLowerCase().includes("per day") ||
+                         errorBody.toLowerCase().includes("per_day") ||
+                         errorBody.toLowerCase().includes("daily");
+
+    if (isDailyQuota) {
+      // Daily quota — no point retrying with other keys from the same project
+      throw new Error(
+        "Daily API quota exhausted. Free-tier Gemini allows ~1,500 requests/day (resets at midnight Pacific Time). " +
+        "To fix: create keys under SEPARATE Google Cloud projects, or upgrade to pay-as-you-go billing."
+      );
+    }
+
+    // Per-minute rate limit — use real exponential backoff (not 500ms!)
+    // Respect Retry-After header if present
+    const retryAfterHeader = response.headers.get("Retry-After");
+    let delayMs: number;
+    if (retryAfterHeader) {
+      delayMs = parseInt(retryAfterHeader, 10) * 1000 || 5000;
+    } else {
+      // Exponential backoff: 5s, 15s, 30s, 60s, 60s...
+      delayMs = Math.min(5000 * Math.pow(2, retryCount), 60000);
+    }
+
+    console.log(
+      `[429] Rate limited on key #${(currentKeyIndex + keysCount - 1) % keysCount + 1}. ` +
+      `Rotating to next key, waiting ${(delayMs / 1000).toFixed(1)}s ` +
+      `(attempt ${retryCount + 1}/${maxRetries})...`
+    );
+    await sleep(delayMs);
     return callGemini(body, retryCount + 1, model);
   }
 
   // Retry on 503 (service unavailable / high demand) — exponential backoff
-  if (response.status === 503 && retryCount < 3) {
-    const delayMs = 2000 * Math.pow(2, retryCount); // 2s, 4s, 8s
-    console.log(`503 Service Unavailable, retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/3)...`);
+  if (response.status === 503 && retryCount < 4) {
+    const delayMs = 3000 * Math.pow(2, retryCount); // 3s, 6s, 12s, 24s
+    console.log(`[503] Service Unavailable, retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/4)...`);
     await sleep(delayMs);
     return callGemini(body, retryCount + 1, model);
   }
@@ -1601,10 +1631,16 @@ async function callGemini(body: Record<string, unknown>, retryCount = 0, model =
   if (!response.ok) {
     const errorBody = await response.text();
     if (response.status === 429) {
-      throw new Error("All Gemini API keys have exhausted their rate limits. Please try again later.");
+      throw new Error(
+        "All Gemini API keys have exhausted their rate limits after " + maxRetries + " retries. " +
+        "This usually means: (1) All keys are under the same Google Cloud project (shared quota), or " +
+        "(2) You've hit the free-tier daily limit (~1,500 requests/day). " +
+        "Fix: Create each key under a SEPARATE Google Cloud project, or enable pay-as-you-go billing. " +
+        "Try again in 1-2 minutes for per-minute limits, or after midnight PT for daily limits."
+      );
     }
     if (response.status === 503) {
-      throw new Error("Gemini is experiencing high demand. Retried 3 times but still unavailable. Please try again in a minute.");
+      throw new Error("Gemini is experiencing high demand. Retried 4 times but still unavailable. Please try again in a minute.");
     }
     throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
   }
