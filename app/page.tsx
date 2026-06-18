@@ -83,7 +83,8 @@ export default function Home() {
             lastInput?.sourceFaceImage ||
             lastInput?.targetPoseImage ||
             lastInput?.logoImage ||
-            lastInput?.mockupReferenceImage
+            lastInput?.mockupReferenceImage ||
+            lastInput?.productImage
           )
         }
       />

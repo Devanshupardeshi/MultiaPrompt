@@ -25,6 +25,15 @@ export async function POST(request: NextRequest) {
     if (payload.mode === "deep_research" && (!payload.businessName || !payload.businessName.trim())) {
       return NextResponse.json({ error: "Business name is required for Deep Research mode" }, { status: 400 });
     }
+    if (payload.mode === "video_standard" && (!payload.description || !payload.description.trim())) {
+      return NextResponse.json({ error: "A scene description is required for Text-to-Video mode" }, { status: 400 });
+    }
+    if (payload.mode === "video_logo_animation" && !payload.logoImage) {
+      return NextResponse.json({ error: "A logo image is required for Video Logo Animation mode" }, { status: 400 });
+    }
+    if (payload.mode === "video_product_showcase" && !payload.productImage && (!payload.productDescription || !payload.productDescription.trim())) {
+      return NextResponse.json({ error: "A product image or description is required for Video Product Showcase mode" }, { status: 400 });
+    }
 
     const result = await generatePrompt(payload);
 

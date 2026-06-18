@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 
-import { GenerationMode } from "./input-form";
+import { GenerationMode, isVideoMode } from "./input-form";
 
 interface OutputDisplayProps {
   json: string | null;
@@ -169,7 +169,7 @@ export function OutputDisplay({
         )}
 
         {/* JSON output — standard modes */}
-        {json && !isLoading && mode !== "3d_website" && mode !== "awwwards_website" && (
+        {json && !isLoading && mode !== "3d_website" && mode !== "awwwards_website" && !(mode && isVideoMode(mode)) && (
           <div className="code-block">
             <div className="code-block-header">
               <span className="text-xs text-white/40 font-mono">
@@ -490,6 +490,143 @@ export function OutputDisplay({
                     Regenerate
                   </button>
                 </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Video — single shot or storyboard */}
+        {json && !isLoading && mode && isVideoMode(mode) && (() => {
+          let parsed: any = {};
+          try { parsed = JSON.parse(json); } catch { parsed = {}; }
+          const isStory = Array.isArray(parsed.shots);
+          const shots: any[] = isStory ? parsed.shots : [parsed];
+          const idx = Math.min(activeLayer, Math.max(shots.length - 1, 0));
+          const shot = shots[idx] || {};
+
+          const copyText = async (text: string) => {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }
+          };
+
+          const handleDownloadVideo = () => {
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `video-prompt-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+
+          return (
+            <div className="space-y-4">
+              {/* Storyboard global summary */}
+              {isStory && parsed.global && (
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/10 space-y-1">
+                  <span className="text-[10px] text-white/30 font-body uppercase tracking-[0.2em]">Storyboard · {shots.length} shots</span>
+                  {parsed.global.concept && <p className="text-sm text-white/70 font-body">{parsed.global.concept}</p>}
+                  {parsed.global.consistency_anchors && <p className="text-[12px] text-white/40 font-body">Consistency: {parsed.global.consistency_anchors}</p>}
+                </div>
+              )}
+
+              {/* Shot tabs (storyboard only) */}
+              {isStory && shots.length > 1 && (
+                <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-lg border border-white/10">
+                  {shots.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveLayer(i)}
+                      className={`px-3 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors ${
+                        idx === i ? "bg-white text-black" : "text-white/50 hover:text-white"
+                      }`}
+                    >
+                      Shot {i + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* The paste-ready prompt */}
+              <div className="code-block">
+                <div className="code-block-header">
+                  <span className="text-xs text-white/40 font-mono">
+                    {isStory ? `shot_${idx + 1}.prompt` : "video_prompt"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => copyText(shot.prompt || "")}
+                      className="text-[11px] text-white/80 hover:text-white transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded bg-white/10 hover:bg-white/20 border border-white/10"
+                    >
+                      {copied ? "Copied!" : "🎬 Copy Prompt"}
+                    </button>
+                    {shot.negative_prompt && (
+                      <button
+                        onClick={() => copyText(shot.negative_prompt || "")}
+                        className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
+                      >
+                        Copy Negative
+                      </button>
+                    )}
+                    <button
+                      onClick={handleDownloadVideo}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 border border-white/10"
+                    >
+                      ⬇ JSON
+                    </button>
+                  </div>
+                </div>
+                <div className="code-block-body custom-scrollbar max-h-[300px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-white/90 leading-relaxed font-body">
+                    {shot.prompt || "No prompt generated."}
+                  </pre>
+                </div>
+                {shot.negative_prompt && (
+                  <div className="px-4 py-3 border-t border-white/5">
+                    <span className="text-[10px] text-white/30 font-body uppercase tracking-[0.2em]">Negative</span>
+                    <p className="text-[12px] text-white/45 font-body mt-1">{shot.negative_prompt}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Full structured JSON (secondary) */}
+              <details className="code-block">
+                <summary className="code-block-header cursor-pointer list-none text-xs text-white/40 font-mono">
+                  Full structured JSON (camera · timing · audio · settings)
+                </summary>
+                <div className="code-block-body custom-scrollbar max-h-[400px] overflow-y-auto">
+                  <pre><code dangerouslySetInnerHTML={{ __html: syntaxHighlight(JSON.stringify(parsed, null, 2)) }} /></pre>
+                </div>
+              </details>
+
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] text-white/15 font-body">
+                  Paste the prompt into {parsed?.video_settings?.style ? "your video model" : "Runway / Kling / Veo"}
+                </span>
+                <button
+                  onClick={onRegenerate}
+                  className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  Regenerate
+                </button>
               </div>
             </div>
           );

@@ -119,3 +119,113 @@ export const STYLE_PRESETS: StylePreset[] = [
       "Cinematic film aesthetic: anamorphic widescreen framing sensibility, teal-orange or moody monochrome grade, dramatic motivated key light with deep shadows, atmospheric haze and practical lights rendered as bokeh, 35mm film texture, blockbuster production value, emotive storytelling composition.",
   },
 ];
+
+// Video-optimized style presets. Unlike image styles, these emphasize MOTION
+// cadence, temporal qualities, camera behaviour, and shot pacing.
+export const VIDEO_STYLE_PRESETS: StylePreset[] = [
+  {
+    id: "cinematic_film",
+    label: "Cinematic Film",
+    swatch: "linear-gradient(135deg, #0c1821 0%, #134e4a 55%, #b45309 100%)",
+    directive:
+      "Anamorphic widescreen, teal-orange grade, shallow depth of field, atmospheric haze, 24fps film cadence, motivated lighting with deep shadows, slow deliberate camera moves, blockbuster production value.",
+  },
+  {
+    id: "documentary",
+    label: "Documentary",
+    swatch: "linear-gradient(135deg, #44403c 0%, #78716c 55%, #a8a29e 100%)",
+    directive:
+      "Handheld naturalism, available light, observational framing, 30fps, authentic grain, long uninterrupted takes, subtle organic camera drift, vérité energy.",
+  },
+  {
+    id: "commercial_premium",
+    label: "Premium Commercial",
+    swatch: "linear-gradient(135deg, #0f0f10 0%, #3f3f46 55%, #a1a1aa 100%)",
+    directive:
+      "Studio-grade three-point lighting, smooth motorized dolly and slider moves, pristine product surfaces, 4K sharpness, immaculate reflections, advertising-campaign polish.",
+  },
+  {
+    id: "social_media_dynamic",
+    label: "Social Dynamic",
+    swatch: "linear-gradient(135deg, #18181b 0%, #dc2626 55%, #facc15 100%)",
+    directive:
+      "Fast punchy pacing, vertical 9:16 framing, saturated colors, snap zooms and whip transitions, hook-first energy, trend-aware motion, high momentum.",
+  },
+  {
+    id: "slow_motion_epic",
+    label: "Slow Motion Epic",
+    swatch: "linear-gradient(135deg, #1e1b4b 0%, #4338ca 55%, #93c5fd 100%)",
+    directive:
+      "120fps+ temporal dilation, dramatic reveals, every micro-movement visible, suspended particles, ethereal weightless quality, majestic slow push-ins.",
+  },
+  {
+    id: "noir_moody",
+    label: "Film Noir",
+    swatch: "linear-gradient(135deg, #0a0a0a 0%, #404040 55%, #d4d4d4 100%)",
+    directive:
+      "Hard shadows, high-contrast desaturated or B&W grade, rain-slicked surfaces, venetian-blind light patterns, slow ominous camera creeps, mystery atmosphere.",
+  },
+  {
+    id: "dreamy_ethereal",
+    label: "Dreamy Ethereal",
+    swatch: "linear-gradient(135deg, #fdf2f8 0%, #e7c6cf 55%, #c4b5fd 100%)",
+    directive:
+      "Soft-focus bloom, pastel palette, gentle floating motion, gauze-like diffusion, slow drifting camera, otherworldly calm, lens haze.",
+  },
+  {
+    id: "motion_graphics",
+    label: "Motion Graphics",
+    swatch: "linear-gradient(135deg, #020617 0%, #2563eb 55%, #22d3ee 100%)",
+    directive:
+      "Clean geometric shapes, brand-color palette, smooth eased transitions, kinetic typography, snappy choreographed motion, corporate explainer energy.",
+  },
+  {
+    id: "retro_vhs",
+    label: "Retro VHS",
+    swatch: "linear-gradient(135deg, #422006 0%, #9a3412 55%, #d6d3c4 100%)",
+    directive:
+      "CRT scan lines, VHS tracking artifacts and chroma bleed, 4:3 sensibility, washed-out warm colors, analog noise, slightly jittery handheld feel.",
+  },
+  {
+    id: "anime_stylized",
+    label: "Anime / Stylized",
+    swatch: "linear-gradient(135deg, #1e3a8a 0%, #ec4899 55%, #fde68a 100%)",
+    directive:
+      "Cel-shaded lighting, exaggerated motion dynamics, speed lines, dramatic held poses, snappy anticipation-and-overshoot timing, Japanese animation influence.",
+  },
+  {
+    id: "hyper_realistic",
+    label: "Hyper-Realistic",
+    swatch: "linear-gradient(135deg, #57534e 0%, #a8a29e 55%, #e7e5e4 100%)",
+    directive:
+      "Indistinguishable from real footage, natural micro-movements, physically correct motion and inertia, documentary color fidelity, subtle handheld breathing.",
+  },
+  {
+    id: "time_lapse",
+    label: "Time-Lapse",
+    swatch: "linear-gradient(135deg, #082f49 0%, #0e7490 55%, #fb923c 100%)",
+    directive:
+      "Accelerated time, clouds racing, shadows sweeping, light shifting, busy scenes compressed, locked-off or slow-glide camera, hyperlapse energy.",
+  },
+  {
+    id: "luxury_editorial",
+    label: "Luxury Editorial",
+    swatch: "linear-gradient(135deg, #1a1206 0%, #8a6d1f 55%, #d4af37 100%)",
+    directive:
+      "Vogue-level polish, restrained graceful motion, gold and champagne tones, extreme close-ups on texture, slow reveals, aspirational refinement.",
+  },
+  {
+    id: "sci_fi_futuristic",
+    label: "Sci-Fi Futuristic",
+    swatch: "linear-gradient(135deg, #0a0a1f 0%, #312e81 55%, #06b6d4 100%)",
+    directive:
+      "Neon accents, holographic UI elements, volumetric fog, chrome surfaces, precise mechanized camera moves, cyberpunk or clean-tech energy.",
+  },
+  {
+    id: "nature_wildlife",
+    label: "Nature / Wildlife",
+    swatch: "linear-gradient(135deg, #14532d 0%, #16a34a 55%, #bef264 100%)",
+    directive:
+      "Attenborough-quality realism, macro detail, natural light, patient telephoto observation, compressed depth, slow tracking of organic movement.",
+  },
+];
