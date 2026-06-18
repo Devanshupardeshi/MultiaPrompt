@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 
-import { GenerationMode, isVideoMode } from "./input-form";
+import { GenerationMode, isVideoMode } from "@/lib/shared-types";
 
 interface OutputDisplayProps {
   json: string | null;

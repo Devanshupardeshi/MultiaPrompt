@@ -1,7 +1,7 @@
 // Gemini API integration with round-robin key rotation
 // Keys are read from environment variables GEMINI_API_KEY_1 through GEMINI_API_KEY_5
 
-import { GeneratePayload, isVideoMode } from "@/components/prompt-studio/input-form";
+import { GeneratePayload, isVideoMode } from "@/lib/shared-types";
 
 export type TargetModel = "nano-banana-pro" | "gpt-image";
 

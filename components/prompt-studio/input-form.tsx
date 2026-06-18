@@ -62,13 +62,10 @@ const WEBGL_FEATURES = [
   { id: "image-distortion-reveals", label: "Image Distortion Reveals" },
 ];
 
-export type GenerationMode =
-  | "standard" | "face_swap" | "mockup"
-  | "3d_website" | "awwwards_website" | "deep_research"
-  | "video_standard" | "video_logo_animation" | "video_product_showcase";
+export { GenerationMode, GeneratePayload, isVideoMode, CustomStyle } from "@/lib/shared-types";
+import { GenerationMode, GeneratePayload, isVideoMode, CustomStyle } from "@/lib/shared-types";
 
 const VIDEO_MODES: GenerationMode[] = ["video_standard", "video_logo_animation", "video_product_showcase"];
-export const isVideoMode = (m: GenerationMode): boolean => VIDEO_MODES.includes(m);
 
 // Mode selector grouped by output type.
 const MODE_GROUPS: { label: string; modes: GenerationMode[] }[] = [
@@ -123,103 +120,6 @@ const PRODUCT_PLATFORMS = ["instagram_reel", "tiktok", "youtube_ad", "website_he
 const PRODUCT_MATERIALS = ["metal", "glass", "plastic", "fabric", "wood", "leather", "ceramic"];
 const PRODUCT_BACKGROUNDS = ["studio_gradient", "marble_surface", "lifestyle_setting", "abstract_particles", "nature", "urban"];
 
-export interface GeneratePayload {
-  mode: GenerationMode;
-  description: string;
-  styles: string[];
-  characterName: string;
-  useCharacter: boolean;
-  referenceImages?: string[];
-  sourceFaceImage?: string;
-  targetPoseImage?: string;
-  logoImage?: string;
-  mockupReferenceImage?: string;
-  logoDescription?: string;
-  mockupCount?: number;
-  mockupTypes?: string[];
-  targetModel?: "nano-banana-pro" | "gpt-image";
-  styleDirectives?: { label: string; directive: string }[];
-  // 3D Website mode fields
-  brandName?: string;
-  tagline?: string;
-  websiteType?: string;
-  primaryColor?: string;
-  accentColor?: string;
-  bgColor?: string;
-  headingFont?: string;
-  bodyFont?: string;
-  heroMediaUrl?: string;
-  additionalMediaUrls?: string[];
-  websiteSections?: string[];
-  glassStyle?: string;
-  animationIntensity?: number;
-  animationNames?: string;
-  additionalDetails?: string;
-  designMdContent?: string;
-  // Awwwards 3D (WebGL) mode fields
-  siteCategory?: string;
-  signatureMoment?: string;
-  webglFeatures?: string[];
-  referenceSites?: string;
-  assetStrategy?: string;
-  model3dUrl?: string;
-  // Deep Research mode fields
-  businessName?: string;
-  industry?: string;
-  marketRegion?: string;
-  services?: string;
-  competitorReferences?: string;
-  researchDomains?: string[];
-  targetAudience?: string;
-  businessGoal?: string;
-  brandPositioning?: string;
-  toneOfVoice?: string;
-  // Video mode fields (shared)
-  targetVideoModel?: string;
-  shotStructure?: string;
-  duration?: string;
-  aspectRatio?: string;
-  resolution?: string;
-  fps?: string;
-  cameraMovement?: string;
-  cameraSpeed?: string;
-  cameraAngle?: string;
-  focalLength?: string;
-  motionIntensity?: number;
-  motionStyle?: string;
-  beatStructure?: string;
-  timingScript?: string;
-  loopable?: boolean;
-  environmentDesc?: string;
-  subjectMotion?: string;
-  lightingType?: string;
-  timeOfDay?: string;
-  particleEffects?: string[];
-  audioSync?: boolean;
-  musicMood?: string;
-  soundEffects?: string;
-  // Video logo-animation
-  animationPreset?: string;
-  materialStyle?: string;
-  revealDirection?: string;
-  taglineText?: string;
-  preserveLogoIntegrity?: boolean;
-  // Video product-showcase
-  productImage?: string;
-  productDescription?: string;
-  showcaseType?: string;
-  platformTarget?: string;
-  ctaText?: string;
-  productMaterial?: string;
-  backgroundScene?: string;
-}
-
-export interface CustomStyle {
-  id: string;
-  label: string;
-  directive: string;
-  thumbnail: string;
-}
 
 interface InputFormProps {
   onGenerate: (data: GeneratePayload) => void;

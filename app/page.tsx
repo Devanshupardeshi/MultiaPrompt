@@ -7,7 +7,7 @@ import { InputForm } from "@/components/prompt-studio/input-form";
 import { OutputDisplay } from "@/components/prompt-studio/output-display";
 import { Footer } from "@/components/prompt-studio/footer";
 
-import { GenerationMode, GeneratePayload } from "@/components/prompt-studio/input-form";
+import { GenerationMode, GeneratePayload } from "@/lib/shared-types";
 
 export default function Home() {
   const [generatedJson, setGeneratedJson] = useState<string | null>(null);
