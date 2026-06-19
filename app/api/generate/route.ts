@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePrompt } from "@/lib/gemini";
+import { incrementDailyPromptCount } from "@/lib/prompt-count-server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await generatePrompt(payload);
+    await incrementDailyPromptCount();
 
     return NextResponse.json({ json: result });
   } catch (error) {

@@ -6,6 +6,7 @@ import { Hero } from "@/components/prompt-studio/hero";
 import { InputForm } from "@/components/prompt-studio/input-form";
 import { OutputDisplay } from "@/components/prompt-studio/output-display";
 import { Footer } from "@/components/prompt-studio/footer";
+import { useDailyPromptCount } from "@/lib/use-daily-prompt-count";
 
 import { GenerationMode, GeneratePayload } from "@/lib/shared-types";
 
@@ -14,6 +15,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratePayload | null>(null);
+  const { count: dailyPromptCount } = useDailyPromptCount();
 
   const handleGenerate = useCallback(
     async (payload: GeneratePayload) => {
@@ -55,7 +57,7 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen noise-overlay">
-      <Header />
+      <Header dailyPromptCount={dailyPromptCount} />
 
       <Hero />
 

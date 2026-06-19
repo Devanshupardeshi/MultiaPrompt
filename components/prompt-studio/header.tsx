@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 
-export function Header() {
+interface HeaderProps {
+  dailyPromptCount: number | null;
+}
+
+export function Header({ dailyPromptCount }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -44,6 +48,17 @@ export function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-4">
+          <div
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 sm:px-3 py-1.5"
+            title="Successful prompts generated today"
+          >
+            <span className="text-[10px] text-white/35 font-body uppercase tracking-[0.18em]">
+              Today
+            </span>
+            <span className="font-display text-sm text-white tabular-nums">
+              {dailyPromptCount ?? "--"}
+            </span>
+          </div>
           <a
             href="https://multia.in"
             target="_blank"
