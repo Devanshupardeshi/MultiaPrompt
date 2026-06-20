@@ -62,7 +62,8 @@ const WEBGL_FEATURES = [
   { id: "image-distortion-reveals", label: "Image Distortion Reveals" },
 ];
 
-export { GenerationMode, GeneratePayload, isVideoMode, CustomStyle } from "@/lib/shared-types";
+export type { GenerationMode, GeneratePayload, CustomStyle } from "@/lib/shared-types";
+export { isVideoMode } from "@/lib/shared-types";
 import { GenerationMode, GeneratePayload, isVideoMode, CustomStyle } from "@/lib/shared-types";
 
 const VIDEO_MODES: GenerationMode[] = ["video_standard", "video_logo_animation", "video_product_showcase"];

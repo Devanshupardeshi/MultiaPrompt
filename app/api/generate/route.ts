@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generatePrompt } from "@/lib/gemini";
+import { generatePrompt, PoolBusyError } from "@/lib/gemini";
 import { incrementDailyPromptCount } from "@/lib/prompt-count-server";
+import { getSettingsCached } from "@/lib/api-keys";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,11 +37,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A product image or description is required for Video Product Showcase mode" }, { status: 400 });
     }
 
+    // Maintenance kill-switch (toggled live from the admin panel).
+    const settings = await getSettingsCached();
+    if (settings.maintenance_mode) {
+      return NextResponse.json(
+        {
+          error: "The studio is in maintenance mode right now. Please check back shortly.",
+          maintenance: true,
+        },
+        { status: 503 }
+      );
+    }
+
     const result = await generatePrompt(payload);
     await incrementDailyPromptCount();
 
     return NextResponse.json({ json: result });
   } catch (error) {
+    // Pool drained — every key is cooling/exhausted. Return a structured, queue-able
+    // response so the studio can show a live countdown and auto-retry.
+    if (error instanceof PoolBusyError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          poolBusy: true,
+          soonestRecoveryAt: error.soonestRecoveryAt,
+          retryAfterMs: error.retryAfterMs,
+        },
+        { status: 503 }
+      );
+    }
+
     console.error("Generate API error:", error);
 
     const message =
@@ -49,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Check if it's a config error
     if (message.includes("No Gemini API keys")) {
       return NextResponse.json(
-        { error: "API keys not configured. Add your Gemini keys to .env.local" },
+        { error: "API keys not configured. Add keys in the admin panel (/admin) or to .env.local" },
         { status: 503 }
       );
     }

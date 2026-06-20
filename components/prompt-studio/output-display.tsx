@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import { GenerationMode, isVideoMode } from "@/lib/shared-types";
 
@@ -11,6 +11,40 @@ interface OutputDisplayProps {
   onRegenerate: () => void;
   hasImage?: boolean;
   mode?: GenerationMode;
+  queuedUntil?: number | null;
+  queueMessage?: string | null;
+}
+
+// Live countdown shown while the request is queued waiting for a free key in the pool.
+function QueueWaiting({ until, message }: { until: number; message?: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, []);
+  const secs = Math.max(0, Math.ceil((until - now) / 1000));
+  return (
+    <div className="code-block">
+      <div className="code-block-header">
+        <span className="text-xs text-white/30 font-mono">prompt.json</span>
+        <span className="text-[11px] text-amber-400/70">queued…</span>
+      </div>
+      <div className="code-block-body">
+        <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+          <div className="relative w-10 h-10">
+            <span className="absolute inset-0 rounded-full border-2 border-amber-400/20" />
+            <span className="absolute inset-0 rounded-full border-2 border-amber-400/80 border-t-transparent animate-spin" />
+          </div>
+          <p className="text-sm text-white/70 font-body">{message || "Waiting for a free key…"}</p>
+          <p className="text-2xl font-mono text-amber-300 tabular-nums">{secs}s</p>
+          <p className="text-[12px] text-white/35 font-body max-w-sm">
+            All keys are briefly at their rate limit. We&apos;ll retry automatically the moment one frees
+            up — no need to press anything.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function syntaxHighlight(json: string): string {
@@ -41,6 +75,8 @@ export function OutputDisplay({
   onRegenerate,
   hasImage,
   mode,
+  queuedUntil,
+  queueMessage,
 }: OutputDisplayProps) {
   const [copied, setCopied] = useState(false);
   const [activeLayer, setActiveLayer] = useState(0);
@@ -131,8 +167,13 @@ export function OutputDisplay({
           </div>
         )}
 
+        {/* Queued waiting for a free key (pool briefly drained) */}
+        {isLoading && queuedUntil ? (
+          <QueueWaiting until={queuedUntil} message={queueMessage} />
+        ) : null}
+
         {/* Loading skeleton */}
-        {isLoading && (
+        {isLoading && !queuedUntil && (
           <div className="code-block">
             <div className="code-block-header">
               <span className="text-xs text-white/30 font-mono">
@@ -377,22 +418,11 @@ export function OutputDisplay({
           );
         })()}
 
-        {/* Awwwards 3D — 7-layer WebGL build prompt */}
+        {/* Awwwards 3D — single cohesive build prompt */}
         {json && !isLoading && mode === "awwwards_website" && (() => {
           let parsed: any = {};
           try { parsed = JSON.parse(json); } catch { parsed = {}; }
-          const layers = [
-            { key: "full_prompt", label: "★ Final Prompt", icon: "🚀" },
-            { key: "layer_concept", label: "01 — Concept", icon: "🎯" },
-            { key: "layer_typography", label: "02 — Type", icon: "Aa" },
-            { key: "layer_palette", label: "03 — Color & Materials", icon: "🎨" },
-            { key: "layer_layout", label: "04 — Layout", icon: "📐" },
-            { key: "layer_webgl", label: "05 — WebGL", icon: "🌐" },
-            { key: "layer_motion", label: "06 — Motion & Parallax", icon: "🎬" },
-            { key: "layer_tech", label: "07 — Tech & Build", icon: "🛠" },
-          ];
-
-          const activeKey = layers[activeLayer]?.key ?? "full_prompt";
+          const fullPrompt: string = parsed.full_prompt || "";
 
           const handleCopyText = async (text: string) => {
             try {
@@ -412,7 +442,7 @@ export function OutputDisplay({
           };
 
           const handleDownloadPrompt = () => {
-            const blob = new Blob([parsed.full_prompt || ""], { type: "text/markdown" });
+            const blob = new Blob([fullPrompt], { type: "text/markdown" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -425,40 +455,24 @@ export function OutputDisplay({
 
           return (
             <div className="space-y-4">
-              {/* Layer tabs */}
-              <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-lg border border-white/10">
-                {layers.map((layer, i) => (
-                  <button
-                    key={layer.key}
-                    onClick={() => setActiveLayer(i)}
-                    className={`px-3 py-2 text-xs font-body uppercase tracking-wider rounded transition-colors flex items-center gap-1.5 ${
-                      activeLayer === i ? "bg-white text-black" : "text-white/50 hover:text-white"
-                    }`}
-                  >
-                    <span>{layer.icon}</span>
-                    {layer.label}
-                  </button>
-                ))}
-              </div>
+              {/* Concept line */}
+              {parsed.concept && (
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/10">
+                  <span className="text-[10px] text-white/30 font-body uppercase tracking-[0.2em]">The Concept</span>
+                  <p className="text-sm text-white/80 font-body mt-1 leading-relaxed">{parsed.concept}</p>
+                </div>
+              )}
 
-              {/* Active layer content */}
+              {/* The build prompt */}
               <div className="code-block">
                 <div className="code-block-header">
-                  <span className="text-xs text-white/40 font-mono">
-                    {layers[activeLayer]?.label ?? "★ Final Prompt"}
-                  </span>
+                  <span className="text-xs text-white/40 font-mono">build_prompt.md</span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleCopyText(parsed[activeKey] || "")}
-                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5"
-                    >
-                      {copied ? "Copied!" : "Copy"}
-                    </button>
-                    <button
-                      onClick={() => handleCopyText(parsed.full_prompt || "")}
+                      onClick={() => handleCopyText(fullPrompt)}
                       className="text-[11px] text-white/80 hover:text-white transition-colors font-body uppercase tracking-wider flex items-center gap-1.5 px-2 py-1 rounded bg-white/10 hover:bg-white/20 border border-white/10"
                     >
-                      🚀 Copy Full Prompt
+                      {copied ? "Copied!" : "🚀 Copy Prompt"}
                     </button>
                     <button
                       onClick={handleDownloadPrompt}
@@ -471,13 +485,13 @@ export function OutputDisplay({
 
                 <div className="code-block-body custom-scrollbar max-h-[600px] overflow-y-auto">
                   <pre className="whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-body">
-                    {parsed[activeKey] || "No content generated for this layer."}
+                    {fullPrompt || "No prompt generated."}
                   </pre>
                 </div>
 
                 <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[11px] text-white/15 font-body">
-                    Paste the Final Prompt into ChatGPT or Claude Code to build the site
+                    Paste this into ChatGPT or Claude Code to build the site
                   </span>
                   <button
                     onClick={onRegenerate}
