@@ -111,6 +111,19 @@ export default function Home() {
     }
   }, [lastInput, handleGenerate]);
 
+  // Switching modes wipes the previous result so a stale prompt never lingers.
+  const handleModeChange = useCallback(() => {
+    if (retryTimer.current) {
+      window.clearTimeout(retryTimer.current);
+      retryTimer.current = null;
+    }
+    setGeneratedJson(null);
+    setError(null);
+    setQueuedUntil(null);
+    setQueueMessage(null);
+    setLastInput(null);
+  }, []);
+
   return (
     <main className="relative min-h-screen noise-overlay">
       <Header dailyPromptCount={dailyPromptCount} />
@@ -122,7 +135,7 @@ export default function Home() {
         <div className="h-px bg-white/5" />
       </div>
 
-      <InputForm onGenerate={handleGenerate} isLoading={isLoading} />
+      <InputForm onGenerate={handleGenerate} isLoading={isLoading} onModeChange={handleModeChange} />
 
       {/* Divider */}
       <div className="max-w-[1200px] mx-auto px-6">

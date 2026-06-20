@@ -1,6 +1,7 @@
 // Gemini API integration with round-robin key rotation
 // Keys are read from environment variables GEMINI_API_KEY_1 through GEMINI_API_KEY_5
 
+import { after } from "next/server";
 import { GeneratePayload, isVideoMode } from "@/lib/shared-types";
 import {
   claimNextKey,
@@ -72,6 +73,16 @@ function extractApiErrorMessage(body: string): string {
     /* not JSON */
   }
   return body.slice(0, 500);
+}
+
+// Run a key-health write AFTER the response is sent (keeps DB latency off the
+// user's critical path). Falls back to fire-and-forget outside a request scope.
+function deferReport(fn: () => Promise<void>) {
+  try {
+    after(fn);
+  } catch {
+    void fn();
+  }
 }
 
 const GPT_IMAGE_RESOLUTIONS = ["1024x1024", "1536x1024", "1024x1536"];
@@ -1666,7 +1677,10 @@ async function callGemini(
         throw new Error("No content in Gemini response");
       }
 
-      if (keyId) await reportKeyResult(keyId, { success: true, latencyMs, mode });
+      if (keyId) {
+        const kid = keyId;
+        deferReport(() => reportKeyResult(kid, { success: true, latencyMs, mode }));
+      }
       return text.trim();
     }
 
@@ -1900,12 +1914,25 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
   const model = settings.default_model || DEFAULT_MODEL;
 
   const isAwwwards = payload.mode === "awwwards_website";
+  const isImageMode =
+    payload.mode === "standard" || payload.mode === "face_swap" || payload.mode === "mockup";
+
+  // Per-mode temperature: high where invention matters (creative sites), low where
+  // fidelity matters (copying a face/logo), mid for video (precision > fluff).
+  const temperature =
+    payload.mode === "awwwards_website" ? 0.9 :
+    payload.mode === "3d_website" ? 0.8 :
+    isVideoMode(payload.mode) ? 0.55 :
+    payload.mode === "standard" ? 0.55 :
+    payload.mode === "mockup" ? 0.45 :
+    payload.mode === "face_swap" ? 0.3 :
+    0.4; // sensible default for any other mode
 
   const makeBody = (extraParts: Array<{ text: string }> = []) => ({
     contents: [{ role: "user", parts: [...parts, ...extraParts] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      temperature: isAwwwards ? 0.85 : (payload.mode === "3d_website" || isVideoMode(payload.mode)) ? 0.7 : 0.35,
+      temperature,
       topP: 0.9,
       topK: 40,
       responseMimeType: "application/json",
@@ -1914,7 +1941,9 @@ export async function generatePrompt(payload: GeneratePayload): Promise<string> 
         ? { thinkingBudget: 8192 }
         : (isVideoMode(payload.mode) && payload.shotStructure === "storyboard")
           ? { thinkingBudget: 2048 }
-          : { thinkingBudget: 0 },
+          : isImageMode
+            ? { thinkingBudget: 512 }
+            : { thinkingBudget: 0 },
     },
   });
 
@@ -2039,7 +2068,7 @@ async function generateDeepResearchParallel(payload: GeneratePayload): Promise<s
         }],
         systemInstruction: { parts: [{ text: systemPrompt }] },
         generationConfig: {
-          temperature: 0.5,
+          temperature: 0.4,
           topP: 0.9,
           topK: 40,
           responseMimeType: "application/json",
@@ -2052,11 +2081,9 @@ async function generateDeepResearchParallel(payload: GeneratePayload): Promise<s
         const text = await callGeminiWithKey(body, desc.key, model);
         const parsed = JSON.parse(text);
         if (desc.id) {
-          await reportKeyResult(desc.id, {
-            success: true,
-            latencyMs: Date.now() - startedAt,
-            mode: "deep_research",
-          });
+          const kid = desc.id;
+          const latencyMs = Date.now() - startedAt;
+          deferReport(() => reportKeyResult(kid, { success: true, latencyMs, mode: "deep_research" }));
         }
         console.log(`✓ ${sectionKey} complete (key ...${desc.key.slice(-4)})`);
         return { key: sectionKey, data: parsed };

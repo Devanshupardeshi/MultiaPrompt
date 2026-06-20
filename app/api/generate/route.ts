@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { generatePrompt, PoolBusyError } from "@/lib/gemini";
 import { incrementDailyPromptCount } from "@/lib/prompt-count-server";
 import { getSettingsCached } from "@/lib/api-keys";
@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await generatePrompt(payload);
-    await incrementDailyPromptCount();
+    // Count after the response is sent — don't make the user wait on this write.
+    after(() => incrementDailyPromptCount());
 
     return NextResponse.json({ json: result });
   } catch (error) {
