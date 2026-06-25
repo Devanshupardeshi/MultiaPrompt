@@ -583,6 +583,9 @@ export async function getSettings(): Promise<AppSettings> {
     daily_prompt_cap: null,
     maintenance_mode: false,
     default_model: DEFAULT_MODEL,
+    provider: "gemini",
+    openrouter_api_key: "",
+    openrouter_model: "anthropic/claude-opus-4.6",
   };
   const sb = getSupabaseAdminClient();
   if (!sb) return defaults;
@@ -594,6 +597,9 @@ export async function getSettings(): Promise<AppSettings> {
     daily_prompt_cap: (map.daily_prompt_cap as number | null) ?? null,
     maintenance_mode: (map.maintenance_mode as boolean) ?? false,
     default_model: (map.default_model as string) || DEFAULT_MODEL,
+    provider: (map.provider as "gemini" | "openrouter") === "openrouter" ? "openrouter" : "gemini",
+    openrouter_api_key: (map.openrouter_api_key as string) || "",
+    openrouter_model: (map.openrouter_model as string) || "anthropic/claude-opus-4.6",
   };
 }
 

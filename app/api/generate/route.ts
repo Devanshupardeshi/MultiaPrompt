@@ -3,6 +3,9 @@ import { generatePrompt, PoolBusyError } from "@/lib/gemini";
 import { incrementDailyPromptCount } from "@/lib/prompt-count-server";
 import { getSettingsCached } from "@/lib/api-keys";
 
+// Claude (OpenRouter) and heavy Awwwards/3D Gemini calls can run long — give them room.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

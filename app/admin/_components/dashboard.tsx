@@ -15,6 +15,9 @@ import {
 
 type Tab = "keys" | "analytics" | "errors" | "settings" | "setup";
 
+// What the settings API returns to the browser — raw OpenRouter key is masked.
+type AdminSettings = Omit<AppSettings, "openrouter_api_key"> & { openrouter_api_key_set?: boolean };
+
 interface DailyStat {
   key_id: string;
   date: string;
@@ -113,7 +116,7 @@ export function Dashboard() {
   const [events, setEvents] = useState<UsageEvent[]>([]);
   const [counts, setCounts] = useState<ErrorCounts | null>(null);
 
-  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
 
   const [setup, setSetup] = useState<SetupState | null>(null);
@@ -727,7 +730,7 @@ function SettingsTab({
   now,
   onSaved,
 }: {
-  settings: AppSettings | null;
+  settings: AdminSettings | null;
   audit: AuditEntry[];
   now: number;
   onSaved: () => void;
@@ -735,6 +738,10 @@ function SettingsTab({
   const [cap, setCap] = useState("");
   const [maintenance, setMaintenance] = useState(false);
   const [model, setModel] = useState("gemini-3.5-flash");
+  const [provider, setProvider] = useState<"gemini" | "openrouter">("gemini");
+  const [orKey, setOrKey] = useState("");
+  const [orModel, setOrModel] = useState("anthropic/claude-opus-4.6");
+  const [orKeySet, setOrKeySet] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -742,6 +749,10 @@ function SettingsTab({
       setCap(settings.daily_prompt_cap === null ? "" : String(settings.daily_prompt_cap));
       setMaintenance(settings.maintenance_mode);
       setModel(settings.default_model);
+      setProvider(settings.provider ?? "gemini");
+      setOrModel(settings.openrouter_model || "anthropic/claude-opus-4.6");
+      setOrKeySet(!!settings.openrouter_api_key_set);
+      setOrKey("");
     }
   }, [settings]);
 
@@ -754,6 +765,10 @@ function SettingsTab({
           daily_prompt_cap: cap.trim() === "" ? null : Number(cap),
           maintenance_mode: maintenance,
           default_model: model,
+          provider,
+          openrouter_model: orModel,
+          // only sent when non-empty — blank keeps the existing key
+          ...(orKey.trim() ? { openrouter_api_key: orKey.trim() } : {}),
         }),
       });
       if (ok) {
@@ -772,7 +787,52 @@ function SettingsTab({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4 rounded-xl border border-white/10 p-5">
-        <div className="text-sm font-medium text-white/80">Global controls</div>
+        <div className="text-sm font-medium text-white/80">Provider</div>
+        <div className="grid grid-cols-2 gap-2">
+          {(["gemini", "openrouter"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setProvider(p)}
+              className={`rounded-lg border px-3 py-2 text-sm capitalize transition-colors ${
+                provider === p ? "border-white bg-white text-black" : "border-white/15 text-white/60 hover:bg-white/5"
+              }`}
+            >
+              {p === "openrouter" ? "OpenRouter" : "Gemini"}
+            </button>
+          ))}
+        </div>
+
+        {provider === "openrouter" && (
+          <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
+            <label className="block">
+              <span className="text-xs uppercase tracking-wider text-white/40">
+                OpenRouter API key {orKeySet && <span className="text-emerald-400/70 normal-case">· saved</span>}
+              </span>
+              <input
+                value={orKey}
+                onChange={(e) => setOrKey(e.target.value)}
+                type="password"
+                placeholder={orKeySet ? "•••••••• (leave blank to keep current)" : "sk-or-v1-…"}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-white/30"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wider text-white/40">OpenRouter model</span>
+              <input
+                value={orModel}
+                onChange={(e) => setOrModel(e.target.value)}
+                placeholder="anthropic/claude-opus-4.6"
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm font-mono outline-none focus:border-white/30"
+              />
+            </label>
+            <p className="text-[11px] text-white/35">
+              Routes ALL generation through this single key (e.g. Claude Opus via Bedrock). Parallel modes
+              (deep research) are auto-serialized so a low Bedrock quota isn&apos;t blown.
+            </p>
+          </div>
+        )}
+
+        <div className="pt-1 text-sm font-medium text-white/80">Global controls</div>
 
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-white/40">Daily prompt cap</span>

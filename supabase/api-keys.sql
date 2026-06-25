@@ -97,7 +97,10 @@ create table if not exists public.admin_audit_log (
 insert into public.app_settings (key, value) values
   ('daily_prompt_cap', 'null'::jsonb),          -- null = unlimited
   ('maintenance_mode', 'false'::jsonb),
-  ('default_model',    '"gemini-3.5-flash"'::jsonb)
+  ('default_model',    '"gemini-3.5-flash"'::jsonb),
+  ('provider',         '"gemini"'::jsonb),        -- 'gemini' | 'openrouter'
+  ('openrouter_api_key', '""'::jsonb),            -- set from the admin panel (Settings)
+  ('openrouter_model', '"anthropic/claude-opus-4.6"'::jsonb)
 on conflict (key) do nothing;
 
 -- ----------------------------------------------------------------------------

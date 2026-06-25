@@ -81,6 +81,9 @@ export interface AppSettings {
   daily_prompt_cap: number | null; // null = unlimited
   maintenance_mode: boolean;
   default_model: string;
+  provider: "gemini" | "openrouter";
+  openrouter_api_key: string; // never sent to the browser
+  openrouter_model: string;
 }
 
 export interface AuditEntry {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { STYLE_PRESETS, VIDEO_STYLE_PRESETS } from "@/lib/style-presets";
 
 const MOCKUP_TYPES = [
@@ -125,7 +125,7 @@ const PRODUCT_BACKGROUNDS = ["studio_gradient", "marble_surface", "lifestyle_set
 interface InputFormProps {
   onGenerate: (data: GeneratePayload) => void;
   isLoading: boolean;
-  onModeChange?: () => void;
+  onModeChange?: (mode: GenerationMode) => void;
 }
 
 export function InputForm({ onGenerate, isLoading, onModeChange }: InputFormProps) {
@@ -290,95 +290,10 @@ export function InputForm({ onGenerate, isLoading, onModeChange }: InputFormProp
   const [productMaterial, setProductMaterial] = useState("metal");
   const [backgroundScene, setBackgroundScene] = useState("studio_gradient");
 
-  // Switching modes should give a clean slate: reset every input field and tell
-  // the page to drop the previously generated prompt. (We keep `customStyles`, the
-  // user's extracted-style library, since that is reusable across modes.)
-  const isFirstRender = useRef(true);
+  // Tell the page which mode is active so it shows that mode's own output. Each
+  // mode keeps its own inputs (the fields persist) and its own generated prompt.
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setDescription("");
-    setSelectedStyles(["photorealistic"]);
-    setTargetModel("nano-banana-pro");
-    setStyleError(null);
-    setUseCharacter(false);
-    setCharacterName("");
-    setReferenceImages([]);
-    setSourceFaceImage(null);
-    setTargetPoseImage(null);
-    setLogoImage(null);
-    setMockupReferenceImage(null);
-    setLogoDescription("");
-    setMockupCount(1);
-    setSelectedMockupTypes([]);
-    setBrandName("");
-    setTagline("");
-    setWebsiteType("landing");
-    setPrimaryColor("#6366f1");
-    setAccentColor("#d4af7a");
-    setBgColor("#0b0b0b");
-    setHeadingFont("");
-    setBodyFont("");
-    setHeroMediaUrl("");
-    setAdditionalMediaUrls(["", "", ""]);
-    setWebsiteSections(["navbar", "hero", "features", "cta", "footer"]);
-    setGlassStyle("both");
-    setAnimationIntensity(80);
-    setAnimationNames("");
-    setAdditionalDetails("");
-    setDesignMdContent("");
-    setDesignMdFileName("");
-    setSiteCategory("immersive");
-    setSignatureMoment("");
-    setWebglFeatures(["glsl-shaders", "scroll-scrubbed-3d", "parallax-scroll", "postprocessing"]);
-    setReferenceSites("");
-    setAssetStrategy("library");
-    setModel3dUrl("");
-    setBusinessName("");
-    setResearchIndustry("");
-    setMarketRegion("");
-    setResearchServices("");
-    setCompetitorReferences("");
-    setResearchDomains(["full_research"]);
-    setResearchTargetAudience("");
-    setResearchBusinessGoal("");
-    setResearchBrandPositioning("");
-    setResearchTone("");
-    setTargetVideoModel("veo");
-    setShotStructure("single");
-    setDuration("10s");
-    setAspectRatio("16:9");
-    setResolution("1080p");
-    setFps("24");
-    setCameraMovement("dolly_in");
-    setCameraSpeed("slow");
-    setCameraAngle("eye_level");
-    setVideoMotionIntensity(50);
-    setMotionStyle("cinematic");
-    setTimingScript("");
-    setLoopable(false);
-    setEnvironmentDesc("");
-    setSubjectMotion("");
-    setVideoTimeOfDay("");
-    setVideoParticles([]);
-    setAudioSync(true);
-    setMusicMood("ambient");
-    setSoundEffects("");
-    setAnimationPreset("cinematic_3d_orbit");
-    setMaterialStyle("chrome");
-    setRevealDirection("center_out");
-    setTaglineText("");
-    setPreserveLogoIntegrity(true);
-    setProductImage(null);
-    setProductDescription("");
-    setShowcaseType("hero_rotation");
-    setPlatformTarget("instagram_reel");
-    setCtaText("");
-    setProductMaterial("metal");
-    setBackgroundScene("studio_gradient");
-    onModeChange?.();
+    onModeChange?.(mode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
